@@ -3,6 +3,7 @@
 // Copyright (C) 2010-2018 celeron55, Perttu Ahola <celeron55@gmail.com>
 // Copyright (C) 2013-2018 kwolekr, Ryan Kwolek <kwolekr@minetest.net>
 // Copyright (C) 2015-2018 paramat
+// Copyright (C) 2026 Voltual
 
 #include <cmath>
 #include "mapgen.h"
@@ -29,6 +30,7 @@
 #include "mapgen_v7.h"
 #include "mapgen_valleys.h"
 #include "mapgen_singlenode.h"
+#include "mapgen_randomizer.h"
 #include "cavegen.h"
 #include "dungeongen.h"
 
@@ -70,6 +72,7 @@ struct MapgenDesc {
 // Of the remaining, v5 last due to age, v7 first due to being the default.
 // The order of 'enum MapgenType' in mapgen.h must match this order.
 static MapgenDesc g_reg_mapgens[] = {
+	{"randomizer", true},
 	{"v7",         true},
 	{"valleys",    true},
 	{"carpathian", true},
@@ -149,6 +152,8 @@ Mapgen *Mapgen::createMapgen(MapgenType mgtype, MapgenParams *params,
 	EmergeParams *emerge)
 {
 	switch (mgtype) {
+	case MAPGEN_RANDOMIZER:
+		return new MapgenRandomizer((MapgenRandomizerParams *)params, emerge);
 	case MAPGEN_CARPATHIAN:
 		return new MapgenCarpathian((MapgenCarpathianParams *)params, emerge);
 	case MAPGEN_FLAT:
@@ -174,6 +179,8 @@ Mapgen *Mapgen::createMapgen(MapgenType mgtype, MapgenParams *params,
 MapgenParams *Mapgen::createMapgenParams(MapgenType mgtype)
 {
 	switch (mgtype) {
+	case MAPGEN_RANDOMIZER:
+		return new MapgenRandomizerParams;
 	case MAPGEN_CARPATHIAN:
 		return new MapgenCarpathianParams;
 	case MAPGEN_FLAT:
@@ -708,8 +715,8 @@ void MapgenBasic::generateBiomes()
 				// This is done by aborting the cycle of top/filler placement
 				// immediately by forcing nplaced to stone level.
 				if (c_below == CONTENT_AIR
-						|| c_below == c_water_source
-						|| c_below == c_river_water_source)
+| c_below == c_water_source
+| c_below == c_river_water_source)
 					nplaced = U16_MAX;
 
 				if (river_water_above) {
