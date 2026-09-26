@@ -1,23 +1,6 @@
 apply plugin: 'com.android.library'
 apply plugin: 'de.undercouch.download'
 
-// 动态检测系统中的 ccache
-def ccacheExec = "which ccache".execute().text.trim()
-def cmakeArgsList = [
-	"-DANDROID_STL=c++_shared",
-	"-DENABLE_CURL=1",
-	"-DENABLE_SOUND=1",
-	"-DENABLE_GETTEXT=1",
-	"-DBUILD_UNITTESTS=0",
-	"-DENABLE_UPDATE_CHECKER=0"
-]
-
-// 如果找到了 ccache，给 CMake 加上编译器启动器参数
-if (!ccacheExec.isEmpty()) {
-	cmakeArgsList.add("-DCMAKE_C_COMPILER_LAUNCHER=${ccacheExec}")
-	cmakeArgsList.add("-DCMAKE_CXX_COMPILER_LAUNCHER=${ccacheExec}")
-}
-
 android {
 	ndkVersion "$ndk_version"
 	defaultConfig {
@@ -26,7 +9,10 @@ android {
 		targetSdkVersion 34
 		externalNativeBuild {
 			cmake {
-				arguments cmakeArgsList
+				arguments "-DANDROID_STL=c++_shared",
+					"-DENABLE_CURL=1", "-DENABLE_SOUND=1",
+					"-DENABLE_GETTEXT=1",
+					"-DBUILD_UNITTESTS=0", "-DENABLE_UPDATE_CHECKER=0"
 			}
 		}
 	}
@@ -57,7 +43,7 @@ android {
 }
 
 def depsDir = layout.buildDirectory.dir("../deps").get().asFile
-// 检查 arm64-v8a 目录或 depsDir 是否存在
+// 检查 arm64-v8a 目录或 depsDir 是否存在，避免每次重复解压
 if (new File(depsDir, 'arm64-v8a').exists() || depsDir.exists()) {
 	tasks.register('getDeps') {
 		doLast { logger.lifecycle('Using existing deps from {}', depsDir) }
