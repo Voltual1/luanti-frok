@@ -1,4 +1,4 @@
-package net.minetest.minetest;
+package me.voltual.nb;
 
 import android.content.Context;
 import android.util.Log;

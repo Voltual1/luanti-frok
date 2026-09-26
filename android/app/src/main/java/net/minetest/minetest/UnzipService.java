@@ -17,7 +17,7 @@ You should have received a copy of the GNU Lesser General Public License along
 with this program; if not, see <https://www.gnu.org/licenses/>.
 */
 
-package net.minetest.minetest;
+package me.voltual.nb;
 
 import android.app.IntentService;
 import android.app.Notification;
@@ -43,10 +43,10 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
 public class UnzipService extends IntentService {
-	public static final String ACTION_UPDATE = "net.minetest.minetest.UPDATE";
-	public static final String ACTION_PROGRESS = "net.minetest.minetest.PROGRESS";
-	public static final String ACTION_PROGRESS_MESSAGE = "net.minetest.minetest.PROGRESS_MESSAGE";
-	public static final String ACTION_FAILURE = "net.minetest.minetest.FAILURE";
+	public static final String ACTION_UPDATE = "me.voltual.nb.UPDATE";
+	public static final String ACTION_PROGRESS = "me.voltual.nb.PROGRESS";
+	public static final String ACTION_PROGRESS_MESSAGE = "me.voltual.nb.PROGRESS_MESSAGE";
+	public static final String ACTION_FAILURE = "me.voltual.nb.FAILURE";
 	public static final int SUCCESS = -1;
 	public static final int FAILURE = -2;
 	public static final int INDETERMINATE = -3;
@@ -65,7 +65,7 @@ public class UnzipService extends IntentService {
 	}
 
 	public UnzipService() {
-		super("net.minetest.minetest.UnzipService");
+		super("me.voltual.nb.UnzipService");
 	}
 
 	@Override
