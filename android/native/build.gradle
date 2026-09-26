@@ -43,8 +43,8 @@ android {
 }
 
 def depsDir = layout.buildDirectory.dir("../deps").get().asFile
-// need to do the check here so we can properly skip both tasks
-if (new File(depsDir, 'armeabi-v7a').exists()) {
+// 检查 arm64-v8a 目录或 depsDir 是否存在
+if (new File(depsDir, 'arm64-v8a').exists() || depsDir.exists()) {
 	tasks.register('getDeps') {
 		doLast { logger.lifecycle('Using existing deps from {}', depsDir) }
 	}

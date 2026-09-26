@@ -64,7 +64,7 @@ jobs:
     - name: Cache Android native deps
       uses: actions/cache@v4
       with:
-        path: android/deps
+        path: android/native/deps
         key: luanti-android-deps-arm64-${{ hashFiles('android/native/build.gradle') }}
         restore-keys: |
           luanti-android-deps-arm64-
