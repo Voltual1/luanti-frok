@@ -40,11 +40,15 @@ void MapgenRandomizer::randomizeNodes()
 	const u32 num_nodes = ndef->size();
 	for (content_t id = 0; id < num_nodes; ++id) {
 		const ContentFeatures &f = ndef->get(id);
-		if (f.name.empty() || f.name == "ignore" || f.name == "air")
+		if (f.name.empty() || f.name == "ignore" || f.name == "air" || f.name == "unknown")
 			continue;
+
+		// 排除非普通画法、落下方块、隐藏方块、告示牌以及需要构建回调/元数据的方块
 		if (f.drawtype == NDT_NORMAL &&
 				f.getGroup("not_in_creative_inventory") != 1 &&
-				f.getGroup("falling_node") != 1) {
+				f.getGroup("falling_node") != 1 &&
+				f.getGroup("sign") != 1 &&
+				!f.has_on_construct) {
 			replace_candidates.push_back(id);
 		}
 	}
@@ -59,7 +63,13 @@ void MapgenRandomizer::randomizeNodes()
 				content_t c = vm->m_data[vi].getContent();
 				if (c != CONTENT_AIR && c != CONTENT_IGNORE && c != CONTENT_UNKNOWN) {
 					const ContentFeatures &f = ndef->get(c);
-					if (f.drawtype != NDT_LIQUID && f.drawtype != NDT_FLOWINGLIQUID) {
+					// 仅随机化天然地形方块（is_ground_content），避开告示牌、基岩及建筑结构
+					if (f.is_ground_content &&
+							f.drawtype == NDT_NORMAL &&
+							f.getGroup("bedrock") != 1 &&
+							f.getGroup("sign") != 1 &&
+							f.drawtype != NDT_LIQUID &&
+							f.drawtype != NDT_FLOWINGLIQUID) {
 						u32 rng = getBlockSeed2(v3s16(x, y, z), seed);
 						content_t new_c = replace_candidates[rng % replace_candidates.size()];
 						vm->m_data[vi].setContent(new_c);
