@@ -1,7 +1,7 @@
 name: android
 
-# build on c/cpp changes or workflow changes
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'lib/**.[ch]'
@@ -31,46 +31,50 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v7
+      with:
+        submodules: recursive
+        fetch-depth: 10
+
     - name: Install deps
       run: |
         sudo apt-get update
-        sudo apt-get install -y --no-install-recommends gettext
+        sudo apt-get install -y --no-install-recommends gettext ccache
+
     - name: Set up JDK 17
       uses: actions/setup-java@v5
       with:
-          distribution: 'temurin'
-          java-version: '17'
-    - name: Build AAB with Gradle
-      # We build an AAB as well for uploading to the the Play Store.
-      run: cd android; ./gradlew bundlerelease
-    - name: Build APKs with Gradle
-      # "assemblerelease" is very fast after "bundlerelease".
-      run: cd android; ./gradlew assemblerelease
-    - name: Save AAB artifact
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
+      with:
+        cache-read-only: false
+
+    - name: Setup ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: luanti-android-arm64-debug-${{ runner.os }}
+        max-size: 1G
+        verbose: 1
+
+    - name: Cache Android native deps
+      uses: actions/cache@v4
+      with:
+        path: android/deps
+        key: luanti-android-deps-arm64-${{ hashFiles('android/native/build.gradle') }}
+        restore-keys: |
+          luanti-android-deps-arm64-
+
+    - name: Build Debug APK (arm64 only)
+      run: cd android; ./gradlew assembleDebug --build-cache
+
+    - name: Save arm64 Debug APK
       uses: actions/upload-artifact@v7
       with:
-        name: Luanti-release.aab
-        path: android/app/build/outputs/bundle/release/app-release.aab
-    - name: Save armeabi artifact
-      uses: actions/upload-artifact@v7
-      with:
-        name: Luanti-armeabi-v7a.apk
-        path: android/app/build/outputs/apk/release/app-armeabi-v7a-release-unsigned.apk
-    - name: Save arm64 artifact
-      uses: actions/upload-artifact@v7
-      with:
-        name: Luanti-arm64-v8a.apk
-        path: android/app/build/outputs/apk/release/app-arm64-v8a-release-unsigned.apk
-    - name: Save x86 artifact
-      uses: actions/upload-artifact@v7
-      with:
-        name: Luanti-x86.apk
-        path: android/app/build/outputs/apk/release/app-x86-release-unsigned.apk
-    - name: Save x86_64 artifact
-      uses: actions/upload-artifact@v7
-      with:
-        name: Luanti-x86_64.apk
-        path: android/app/build/outputs/apk/release/app-x86_64-release-unsigned.apk
+        name: Luanti-arm64-v8a-debug.apk
+        path: android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk
+        if-no-files-found: error
