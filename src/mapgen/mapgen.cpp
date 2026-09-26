@@ -3,7 +3,6 @@
 // Copyright (C) 2010-2018 celeron55, Perttu Ahola <celeron55@gmail.com>
 // Copyright (C) 2013-2018 kwolekr, Ryan Kwolek <kwolekr@minetest.net>
 // Copyright (C) 2015-2018 paramat
-// Copyright (C) 2026 Voltual
 
 #include <cmath>
 #include "mapgen.h"

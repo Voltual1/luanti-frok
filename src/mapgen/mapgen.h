@@ -3,7 +3,6 @@
 // Copyright (C) 2010-2020 celeron55, Perttu Ahola <celeron55@gmail.com>
 // Copyright (C) 2015-2020 paramat
 // Copyright (C) 2013-2016 kwolekr, Ryan Kwolek <kwolekr@minetest.net>
-// Copyright (C) 2026 Voltual
 
 #pragma once
 
