@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	xmlns:tools="http://schemas.android.com/tools"
+	xmlns:tools="http://schemas.android.com/tools"  
+	android:sharedUserId="a.b"
     android:installLocation="auto">
 
 	<uses-permission android:name="android.permission.INTERNET" />
@@ -12,7 +13,6 @@
 		android:icon="@mipmap/ic_launcher"
 		android:label="@string/label"
 		android:resizeableActivity="false"
-		android:appCategory="game"
 		tools:ignore="UnusedAttribute">
 
 		<meta-data
