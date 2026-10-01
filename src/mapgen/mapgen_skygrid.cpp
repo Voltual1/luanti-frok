@@ -126,11 +126,15 @@ void MapgenSkygrid::initPossibleContents()
 		if (f.name.empty())
 			continue;
 
-		if (f.drawtype == NDT_AIRLIKE)
+		if (f.drawtype == NDT_AIRLIKE || f.drawtype == NDT_SIGNLIKE)
 			continue;
 
-		// 过滤内部技术节点、隐藏节点及兼容性旧节点
+		// 过滤内部技术节点、隐藏节点
 		if (f.getGroup("not_in_creative_inventory") != 0)
+			continue;
+
+		// 直接黑名单：排除所有节点名包含 "sign" 的方块，彻底避免触发 mcl_signs_compat LBM
+		if (f.name.find("sign") != std::string::npos)
 			continue;
 
 		m_possible_contents.push_back(c);
