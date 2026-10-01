@@ -13,12 +13,15 @@
 
 struct MapgenARGParams : public MapgenParams
 {
-	float web_thickness = 0.35f;
+	float web_thickness = 0.42f;
+	float web_thickness_fine = 0.32f;
 	s16 dungeon_ymin = -31000;
 	s16 dungeon_ymax = 31000;
 
 	NoiseParams np_web1;
 	NoiseParams np_web2;
+	NoiseParams np_web3;
+	NoiseParams np_web4;
 	NoiseParams np_filler_depth;
 	NoiseParams np_cave1;
 	NoiseParams np_cave2;
@@ -47,6 +50,9 @@ public:
 
 private:
 	float web_thickness;
+	float web_thickness_fine;
 	Noise *noise_web1 = nullptr;
 	Noise *noise_web2 = nullptr;
+	Noise *noise_web3 = nullptr;
+	Noise *noise_web4 = nullptr;
 };

@@ -28,6 +28,7 @@ MapgenARG::MapgenARG(MapgenARGParams *params, EmergeParams *emerge)
 {
 	spflags            = params->spflags;
 	web_thickness      = params->web_thickness;
+	web_thickness_fine = params->web_thickness_fine;
 	dungeon_ymin       = params->dungeon_ymin;
 	dungeon_ymax       = params->dungeon_ymax;
 
@@ -35,6 +36,8 @@ MapgenARG::MapgenARG(MapgenARGParams *params, EmergeParams *emerge)
 
 	noise_web1 = new Noise(&params->np_web1, seed, csize.X, csize.Y + 2, csize.Z);
 	noise_web2 = new Noise(&params->np_web2, seed + 1337, csize.X, csize.Y + 2, csize.Z);
+	noise_web3 = new Noise(&params->np_web3, seed + 2026, csize.X, csize.Y + 2, csize.Z);
+	noise_web4 = new Noise(&params->np_web4, seed + 4044, csize.X, csize.Y + 2, csize.Z);
 
 	MapgenBasic::np_cave1    = params->np_cave1;
 	MapgenBasic::np_cave2    = params->np_cave2;
@@ -47,27 +50,34 @@ MapgenARG::~MapgenARG()
 	delete noise_filler_depth;
 	delete noise_web1;
 	delete noise_web2;
+	delete noise_web3;
+	delete noise_web4;
 }
 
 MapgenARGParams::MapgenARGParams() :
-	np_web1         (0.0, 1.0, v3f(128.0, 128.0, 128.0), 983240, 4, 0.55, 2.0),
-	np_web2         (0.0, 1.0, v3f(128.0, 128.0, 128.0), 432109, 4, 0.55, 2.0),
-	np_filler_depth (0.0, 1.2, v3f(150.0, 150.0, 150.0), 261,    3, 0.7,  2.0),
-	np_cave1        (0.0, 12.0, v3f(61.0, 61.0, 61.0),   52534,  3, 0.5,  2.0),
-	np_cave2        (0.0, 12.0, v3f(67.0, 67.0, 67.0),   10325,  3, 0.5,  2.0),
-	np_cavern       (0.0, 1.0, v3f(384.0, 128.0, 384.0), 723,    5, 0.63, 2.0),
-	np_dungeons     (0.9, 0.5, v3f(500.0, 500.0, 500.0), 0,      2, 0.8,  2.0)
+	np_web1         (0.0, 1.0, v3f(42.0, 42.0, 42.0), 983240, 4, 0.55, 2.0),
+	np_web2         (0.0, 1.0, v3f(42.0, 42.0, 42.0), 432109, 4, 0.55, 2.0),
+	np_web3         (0.0, 1.0, v3f(20.0, 20.0, 20.0), 876543, 3, 0.50, 2.0),
+	np_web4         (0.0, 1.0, v3f(20.0, 20.0, 20.0), 123456, 3, 0.50, 2.0),
+	np_filler_depth (0.0, 1.2, v3f(150.0, 150.0, 150.0), 261, 3, 0.7,  2.0),
+	np_cave1        (0.0, 12.0, v3f(61.0, 61.0, 61.0), 52534, 3, 0.5,  2.0),
+	np_cave2        (0.0, 12.0, v3f(67.0, 67.0, 67.0), 10325, 3, 0.5,  2.0),
+	np_cavern       (0.0, 1.0, v3f(384.0, 128.0, 384.0), 723, 5, 0.63, 2.0),
+	np_dungeons     (0.9, 0.5, v3f(500.0, 500.0, 500.0), 0, 2, 0.8,  2.0)
 {
 }
 
 void MapgenARGParams::readParams(const Settings *settings)
 {
-	settings->getFloatNoEx("mgarg_web_thickness", web_thickness);
-	settings->getS16NoEx("mgarg_dungeon_ymin",    dungeon_ymin);
-	settings->getS16NoEx("mgarg_dungeon_ymax",    dungeon_ymax);
+	settings->getFloatNoEx("mgarg_web_thickness",      web_thickness);
+	settings->getFloatNoEx("mgarg_web_thickness_fine", web_thickness_fine);
+	settings->getS16NoEx("mgarg_dungeon_ymin",         dungeon_ymin);
+	settings->getS16NoEx("mgarg_dungeon_ymax",         dungeon_ymax);
 
 	settings->getNoiseParams("mgarg_np_web1",         np_web1);
 	settings->getNoiseParams("mgarg_np_web2",         np_web2);
+	settings->getNoiseParams("mgarg_np_web3",         np_web3);
+	settings->getNoiseParams("mgarg_np_web4",         np_web4);
 	settings->getNoiseParams("mgarg_np_filler_depth", np_filler_depth);
 	settings->getNoiseParams("mgarg_np_cave1",        np_cave1);
 	settings->getNoiseParams("mgarg_np_cave2",        np_cave2);
@@ -77,12 +87,15 @@ void MapgenARGParams::readParams(const Settings *settings)
 
 void MapgenARGParams::writeParams(Settings *settings) const
 {
-	settings->setFloat("mgarg_web_thickness", web_thickness);
-	settings->setS16("mgarg_dungeon_ymin",    dungeon_ymin);
-	settings->setS16("mgarg_dungeon_ymax",    dungeon_ymax);
+	settings->setFloat("mgarg_web_thickness",      web_thickness);
+	settings->setFloat("mgarg_web_thickness_fine", web_thickness_fine);
+	settings->setS16("mgarg_dungeon_ymin",         dungeon_ymin);
+	settings->setS16("mgarg_dungeon_ymax",         dungeon_ymax);
 
 	settings->setNoiseParams("mgarg_np_web1",         np_web1);
 	settings->setNoiseParams("mgarg_np_web2",         np_web2);
+	settings->setNoiseParams("mgarg_np_web3",         np_web3);
+	settings->setNoiseParams("mgarg_np_web4",         np_web4);
 	settings->setNoiseParams("mgarg_np_filler_depth", np_filler_depth);
 	settings->setNoiseParams("mgarg_np_cave1",        np_cave1);
 	settings->setNoiseParams("mgarg_np_cave2",        np_cave2);
@@ -96,12 +109,17 @@ void MapgenARGParams::setDefaultSettings(Settings *settings)
 
 int MapgenARG::getSpawnLevelAtPoint(v2s16 p)
 {
-	s16 max_spawn_y = 40;
-	for (s16 y = max_spawn_y; y >= -40; y--) {
+	s16 max_spawn_y = 120;
+	for (s16 y = max_spawn_y; y >= -60; y--) {
 		float n1 = NoiseFractal3D(&noise_web1->np, p.X, y, p.Y, seed);
 		float n2 = NoiseFractal3D(&noise_web2->np, p.X, y, p.Y, seed + 1337);
-		float dist = std::sqrt(n1 * n1 + n2 * n2);
-		if (dist < web_thickness) {
+		float dist_main = std::sqrt(n1 * n1 + n2 * n2);
+
+		float n3 = NoiseFractal3D(&noise_web3->np, p.X, y, p.Y, seed + 2026);
+		float n4 = NoiseFractal3D(&noise_web4->np, p.X, y, p.Y, seed + 4044);
+		float dist_fine = std::sqrt(n3 * n3 + n4 * n4);
+
+		if (dist_main < web_thickness || dist_fine < web_thickness_fine) {
 			return y + 2;
 		}
 	}
@@ -169,6 +187,8 @@ int MapgenARG::generateTerrain()
 
 	noise_web1->noiseMap3D(node_min.X, node_min.Y - 1, node_min.Z);
 	noise_web2->noiseMap3D(node_min.X, node_min.Y - 1, node_min.Z);
+	noise_web3->noiseMap3D(node_min.X, node_min.Y - 1, node_min.Z);
+	noise_web4->noiseMap3D(node_min.X, node_min.Y - 1, node_min.Z);
 
 	for (s16 z = node_min.Z; z <= node_max.Z; z++) {
 		for (s16 y = node_min.Y - 1; y <= node_max.Y + 1; y++) {
@@ -179,9 +199,13 @@ int MapgenARG::generateTerrain()
 
 				float n1 = noise_web1->result[index];
 				float n2 = noise_web2->result[index];
-				float dist = std::sqrt(n1 * n1 + n2 * n2);
+				float dist_main = std::sqrt(n1 * n1 + n2 * n2);
 
-				if (dist < web_thickness) {
+				float n3 = noise_web3->result[index];
+				float n4 = noise_web4->result[index];
+				float dist_fine = std::sqrt(n3 * n3 + n4 * n4);
+
+				if (dist_main < web_thickness || dist_fine < web_thickness_fine) {
 					vm->m_data[vi] = MapNode(c_stone);
 					if (y > stone_surface_max_y)
 						stone_surface_max_y = y;
