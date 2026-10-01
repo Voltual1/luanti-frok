@@ -17,6 +17,7 @@ set(mapgen_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/mapgen_skygrid.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/mapgen_glitch.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/mapgen_farlands.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/mapgen_backrooms.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/mg_biome.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/mg_decoration.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/mg_ore.cpp

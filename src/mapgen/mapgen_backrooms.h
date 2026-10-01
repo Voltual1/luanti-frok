@@ -11,8 +11,13 @@
 
 #include "mapgen.h"
 
-struct MapgenFarlandsParams : public MapgenParams
+struct MapgenBackroomsParams : public MapgenParams
 {
+	s16 corridor_width = 24;
+	s16 wall_thickness = 10;
+	s16 shelf_spacing  = 16;
+	s16 shelf_height   = 3;
+
 	float cave_width = 0.09f;
 	s16 large_cave_depth = -33;
 	u16 small_cave_num_min = 0;
@@ -26,37 +31,40 @@ struct MapgenFarlandsParams : public MapgenParams
 	s16 dungeon_ymin = -31000;
 	s16 dungeon_ymax = 31000;
 
-	NoiseParams np_far1;
-	NoiseParams np_far2;
-	NoiseParams np_far_select;
+	NoiseParams np_wall_noise;
+	NoiseParams np_shelf_noise;
 	NoiseParams np_filler_depth;
 	NoiseParams np_cave1;
 	NoiseParams np_cave2;
 	NoiseParams np_cavern;
 	NoiseParams np_dungeons;
 
-	MapgenFarlandsParams();
-	~MapgenFarlandsParams() = default;
+	MapgenBackroomsParams();
+	~MapgenBackroomsParams() = default;
 
 	void readParams(const Settings *settings);
 	void writeParams(Settings *settings) const;
 	void setDefaultSettings(Settings *settings);
 };
 
-class MapgenFarlands : public MapgenBasic
+class MapgenBackrooms : public MapgenBasic
 {
 public:
-	MapgenFarlands(MapgenFarlandsParams *params, EmergeParams *emerge);
-	~MapgenFarlands();
+	MapgenBackrooms(MapgenBackroomsParams *params, EmergeParams *emerge);
+	~MapgenBackrooms();
 
-	virtual MapgenType getType() const { return MAPGEN_FARLANDS; }
+	virtual MapgenType getType() const { return MAPGEN_BACKROOMS; }
 
 	virtual void makeChunk(BlockMakeData *data);
 	int getSpawnLevelAtPoint(v2s16 p);
 	s16 generateTerrain();
 
 private:
-	Noise *noise_far1 = nullptr;
-	Noise *noise_far2 = nullptr;
-	Noise *noise_far_select = nullptr;
+	s16 corridor_width;
+	s16 wall_thickness;
+	s16 shelf_spacing;
+	s16 shelf_height;
+
+	Noise *noise_wall_noise = nullptr;
+	Noise *noise_shelf_noise = nullptr;
 };

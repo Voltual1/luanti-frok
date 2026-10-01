@@ -86,6 +86,7 @@ static MapgenDesc g_reg_mapgens[] = {
 	{"skygrid",    true},
 	{"glitch",     true},
 	{"farlands",   true},
+	{"backrooms",  true},
 };
 
 static_assert(
