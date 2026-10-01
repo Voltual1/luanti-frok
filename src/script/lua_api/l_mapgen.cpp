@@ -621,56 +621,74 @@ int ModApiMapgen::l_get_mapgen_object(lua_State *L)
 		return 3;
 	}
 	case MGOBJ_HEIGHTMAP: {
-		if (!mg->heightmap)
-			return 0;
-
 		lua_createtable(L, maplen, 0);
-		for (size_t i = 0; i != maplen; i++) {
-			lua_pushinteger(L, mg->heightmap[i]);
-			lua_rawseti(L, -2, i + 1);
+		if (mg->heightmap) {
+			for (size_t i = 0; i != maplen; i++) {
+				lua_pushinteger(L, mg->heightmap[i]);
+				lua_rawseti(L, -2, i + 1);
+			}
+		} else {
+			for (size_t i = 0; i != maplen; i++) {
+				lua_pushinteger(L, 0);
+				lua_rawseti(L, -2, i + 1);
+			}
 		}
 
 		return 1;
 	}
 	case MGOBJ_BIOMEMAP: {
-		if (!mg->biomegen)
-			return 0;
-
 		lua_createtable(L, maplen, 0);
-		for (size_t i = 0; i != maplen; i++) {
-			lua_pushinteger(L, mg->biomegen->biomemap[i]);
-			lua_rawseti(L, -2, i + 1);
+		if (mg->biomegen && mg->biomegen->biomemap) {
+			for (size_t i = 0; i != maplen; i++) {
+				lua_pushinteger(L, mg->biomegen->biomemap[i]);
+				lua_rawseti(L, -2, i + 1);
+			}
+		} else {
+			for (size_t i = 0; i != maplen; i++) {
+				lua_pushinteger(L, 0);
+				lua_rawseti(L, -2, i + 1);
+			}
 		}
 
 		return 1;
 	}
 	case MGOBJ_HEATMAP: {
-		if (!mg->biomegen || mg->biomegen->getType() != BIOMEGEN_ORIGINAL)
-			return 0;
-
-		BiomeGenOriginal *bg = (BiomeGenOriginal *)mg->biomegen;
-
 		lua_createtable(L, maplen, 0);
-		for (size_t i = 0; i != maplen; i++) {
-			lua_pushnumber(L, bg->heatmap[i]);
-			lua_rawseti(L, -2, i + 1);
+		if (mg->biomegen && mg->biomegen->getType() == BIOMEGEN_ORIGINAL) {
+			BiomeGenOriginal *bg = (BiomeGenOriginal *)mg->biomegen;
+			if (bg->heatmap) {
+				for (size_t i = 0; i != maplen; i++) {
+					lua_pushnumber(L, bg->heatmap[i]);
+					lua_rawseti(L, -2, i + 1);
+				}
+				return 1;
+			}
 		}
 
+		for (size_t i = 0; i != maplen; i++) {
+			lua_pushnumber(L, 50.0);
+			lua_rawseti(L, -2, i + 1);
+		}
 		return 1;
 	}
 
 	case MGOBJ_HUMIDMAP: {
-		if (!mg->biomegen || mg->biomegen->getType() != BIOMEGEN_ORIGINAL)
-			return 0;
-
-		BiomeGenOriginal *bg = (BiomeGenOriginal *)mg->biomegen;
-
 		lua_createtable(L, maplen, 0);
-		for (size_t i = 0; i != maplen; i++) {
-			lua_pushnumber(L, bg->humidmap[i]);
-			lua_rawseti(L, -2, i + 1);
+		if (mg->biomegen && mg->biomegen->getType() == BIOMEGEN_ORIGINAL) {
+			BiomeGenOriginal *bg = (BiomeGenOriginal *)mg->biomegen;
+			if (bg->humidmap) {
+				for (size_t i = 0; i != maplen; i++) {
+					lua_pushnumber(L, bg->humidmap[i]);
+					lua_rawseti(L, -2, i + 1);
+				}
+				return 1;
+			}
 		}
 
+		for (size_t i = 0; i != maplen; i++) {
+			lua_pushnumber(L, 50.0);
+			lua_rawseti(L, -2, i + 1);
+		}
 		return 1;
 	}
 	case MGOBJ_GENNOTIFY: {

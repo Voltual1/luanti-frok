@@ -181,9 +181,13 @@ void MapgenARG::makeChunk(BlockMakeData *data)
 
 	updateHeightmap(node_min, node_max);
 
-	if (flags & MG_BIOMES) {
+	if (biomegen) {
 		biomegen->calcBiomeNoise(node_min);
-		generateBiomes();
+		if (flags & MG_BIOMES) {
+			generateBiomes();
+		} else {
+			biomegen->getBiomes(heightmap, node_min);
+		}
 	}
 
 	if (flags & MG_CAVES) {
