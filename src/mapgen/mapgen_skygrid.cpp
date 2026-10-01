@@ -126,13 +126,22 @@ void MapgenSkygrid::initPossibleContents()
 		if (f.name.empty())
 			continue;
 
-		if (f.drawtype != NDT_AIRLIKE) {
-			m_possible_contents.push_back(c);
-		}
+		if (f.drawtype == NDT_AIRLIKE)
+			continue;
+
+		// 过滤内部技术节点、隐藏节点及兼容性旧节点
+		if (f.getGroup("not_in_creative_inventory") != 0)
+			continue;
+
+		m_possible_contents.push_back(c);
 	}
 
 	if (m_possible_contents.empty()) {
-		m_possible_contents.push_back(ndef->getId("mapgen_stone"));
+		content_t c_stone = ndef->getId("mapgen_stone");
+		if (c_stone != CONTENT_IGNORE && c_stone != CONTENT_UNKNOWN)
+			m_possible_contents.push_back(c_stone);
+		else
+			m_possible_contents.push_back(CONTENT_AIR);
 	}
 }
 
@@ -176,7 +185,11 @@ void MapgenSkygrid::makeChunk(BlockMakeData *data)
 
 	if (biomegen) {
 		biomegen->calcBiomeNoise(node_min);
-		biomegen->getBiomes(heightmap, node_min);
+		if (flags & MG_BIOMES) {
+			generateBiomes();
+		} else {
+			biomegen->getBiomes(heightmap, node_min);
+		}
 	}
 
 	if (flags & MG_ORES)
