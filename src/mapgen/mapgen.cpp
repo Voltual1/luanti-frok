@@ -30,6 +30,7 @@
 #include "mapgen_valleys.h"
 #include "mapgen_singlenode.h"
 #include "mapgen_arg.h"
+#include "mapgen_skygrid.h"
 #include "cavegen.h"
 #include "dungeongen.h"
 
@@ -80,6 +81,7 @@ static MapgenDesc g_reg_mapgens[] = {
 	{"singlenode", true},
 	{"v6",         true},
 	{"arg",        true},
+	{"skygrid",    true},
 };
 
 static_assert(
@@ -169,6 +171,8 @@ Mapgen *Mapgen::createMapgen(MapgenType mgtype, MapgenParams *params,
 		return new MapgenValleys((MapgenValleysParams *)params, emerge);
 	case MAPGEN_ARG:
 		return new MapgenARG((MapgenARGParams *)params, emerge);
+	case MAPGEN_SKYGRID:
+		return new MapgenSkygrid((MapgenSkygridParams *)params, emerge);
 	default:
 		return nullptr;
 	}
@@ -196,6 +200,8 @@ MapgenParams *Mapgen::createMapgenParams(MapgenType mgtype)
 		return new MapgenValleysParams;
 	case MAPGEN_ARG:
 		return new MapgenARGParams;
+	case MAPGEN_SKYGRID:
+		return new MapgenSkygridParams;
 	default:
 		return nullptr;
 	}
