@@ -88,6 +88,7 @@ static MapgenDesc g_reg_mapgens[] = {
 	{"glitch",     true},
 	{"farlands",   true},
 	{"backrooms",  true},
+	{"layered",  true},
 };
 
 static_assert(
@@ -185,6 +186,8 @@ Mapgen *Mapgen::createMapgen(MapgenType mgtype, MapgenParams *params,
 		return new MapgenFarlands((MapgenFarlandsParams *)params, emerge);
 	case MAPGEN_BACKROOMS:
 		return new MapgenBackrooms((MapgenBackroomsParams *)params, emerge);
+	case MAPGEN_BACKROOMS:
+		return new MAPGEN_LAYERED((MapgenLayeredParams *)params, emerge);
 	default:
 		return nullptr;
 	}
@@ -220,6 +223,8 @@ MapgenParams *Mapgen::createMapgenParams(MapgenType mgtype)
 		return new MapgenFarlandsParams;
 	case MAPGEN_BACKROOMS:
 		return new MapgenBackroomsParams;
+	case MAPGEN_LAYERED:
+		return new MapgenLayeredParams;
 	default:
 		return nullptr;
 	}
