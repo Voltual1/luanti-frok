@@ -13,9 +13,10 @@
 
 struct MapgenFarlandsParams : public MapgenParams
 {
-	float stretch_x = 8.0f;
-	float stretch_y = 1.0f;
-	float stretch_z = 8.0f;
+	s16 corridor_width = 24;
+	s16 wall_thickness = 10;
+	s16 shelf_spacing  = 16;
+	s16 shelf_height   = 3;
 
 	float cave_width = 0.09f;
 	s16 large_cave_depth = -33;
@@ -30,9 +31,8 @@ struct MapgenFarlandsParams : public MapgenParams
 	s16 dungeon_ymin = -31000;
 	s16 dungeon_ymax = 31000;
 
-	NoiseParams np_far_low;
-	NoiseParams np_far_high;
-	NoiseParams np_far_select;
+	NoiseParams np_wall_noise;
+	NoiseParams np_shelf_noise;
 	NoiseParams np_filler_depth;
 	NoiseParams np_cave1;
 	NoiseParams np_cave2;
@@ -60,11 +60,11 @@ public:
 	s16 generateTerrain();
 
 private:
-	float stretch_x;
-	float stretch_y;
-	float stretch_z;
+	s16 corridor_width;
+	s16 wall_thickness;
+	s16 shelf_spacing;
+	s16 shelf_height;
 
-	Noise *noise_far_low = nullptr;
-	Noise *noise_far_high = nullptr;
-	Noise *noise_far_select = nullptr;
+	Noise *noise_wall_noise = nullptr;
+	Noise *noise_shelf_noise = nullptr;
 };

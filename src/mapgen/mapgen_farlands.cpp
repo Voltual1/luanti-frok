@@ -24,13 +24,20 @@
 #include "util/numeric.h"
 #include <cmath>
 
+static inline s16 mymod(s16 a, s16 b)
+{
+	s16 r = a % b;
+	return r < 0 ? r + b : r;
+}
+
 MapgenFarlands::MapgenFarlands(MapgenFarlandsParams *params, EmergeParams *emerge)
 	: MapgenBasic(MAPGEN_FARLANDS, params, emerge)
 {
 	spflags            = params->spflags;
-	stretch_x          = params->stretch_x;
-	stretch_y          = params->stretch_y;
-	stretch_z          = params->stretch_z;
+	corridor_width     = params->corridor_width;
+	wall_thickness     = params->wall_thickness;
+	shelf_spacing      = params->shelf_spacing;
+	shelf_height       = params->shelf_height;
 
 	cave_width         = params->cave_width;
 	large_cave_depth   = params->large_cave_depth;
@@ -47,9 +54,8 @@ MapgenFarlands::MapgenFarlands(MapgenFarlandsParams *params, EmergeParams *emerg
 
 	noise_filler_depth = new Noise(&params->np_filler_depth, seed, csize.X, csize.Z);
 
-	noise_far_low    = new Noise(&params->np_far_low, seed, csize.X, csize.Y + 2, csize.Z);
-	noise_far_high   = new Noise(&params->np_far_high, seed + 101, csize.X, csize.Y + 2, csize.Z);
-	noise_far_select = new Noise(&params->np_far_select, seed + 202, csize.X, csize.Y + 2, csize.Z);
+	noise_wall_noise  = new Noise(&params->np_wall_noise, seed, csize.X, csize.Z);
+	noise_shelf_noise = new Noise(&params->np_shelf_noise, seed + 999, csize.X, csize.Y + 2, csize.Z);
 
 	MapgenBasic::np_cave1    = params->np_cave1;
 	MapgenBasic::np_cave2    = params->np_cave2;
@@ -60,15 +66,13 @@ MapgenFarlands::MapgenFarlands(MapgenFarlandsParams *params, EmergeParams *emerg
 MapgenFarlands::~MapgenFarlands()
 {
 	delete noise_filler_depth;
-	delete noise_far_low;
-	delete noise_far_high;
-	delete noise_far_select;
+	delete noise_wall_noise;
+	delete noise_shelf_noise;
 }
 
 MapgenFarlandsParams::MapgenFarlandsParams() :
-	np_far_low      (0.0, 50.0, v3f(160.0, 320.0, 160.0), 82341, 4, 0.6, 2.0),
-	np_far_high     (0.0, 50.0, v3f(160.0, 320.0, 160.0), 95039, 4, 0.6, 2.0),
-	np_far_select   (0.0, 1.0,  v3f(500.0, 500.0, 500.0), 4213,  3, 0.5, 2.0),
+	np_wall_noise   (0.0, 1.0,  v3f(120.0, 120.0, 120.0), 82341, 3, 0.5, 2.0),
+	np_shelf_noise  (0.0, 1.0,  v3f(30.0,  30.0,  30.0),  95039, 3, 0.5, 2.0),
 	np_filler_depth (0.0, 1.2,  v3f(150.0, 150.0, 150.0), 261,   3, 0.7, 2.0),
 	np_cave1        (0.0, 12.0, v3f(61.0,  61.0,  61.0),  52534, 3, 0.5, 2.0),
 	np_cave2        (0.0, 12.0, v3f(67.0,  67.0,  67.0),  10325, 3, 0.5, 2.0),
@@ -79,9 +83,10 @@ MapgenFarlandsParams::MapgenFarlandsParams() :
 
 void MapgenFarlandsParams::readParams(const Settings *settings)
 {
-	settings->getFloatNoEx("mgfarlands_stretch_x", stretch_x);
-	settings->getFloatNoEx("mgfarlands_stretch_y", stretch_y);
-	settings->getFloatNoEx("mgfarlands_stretch_z", stretch_z);
+	settings->getS16NoEx("mgfarlands_corridor_width", corridor_width);
+	settings->getS16NoEx("mgfarlands_wall_thickness", wall_thickness);
+	settings->getS16NoEx("mgfarlands_shelf_spacing",  shelf_spacing);
+	settings->getS16NoEx("mgfarlands_shelf_height",   shelf_height);
 
 	settings->getFloatNoEx("mgfarlands_cave_width",         cave_width);
 	settings->getS16NoEx("mgfarlands_large_cave_depth",     large_cave_depth);
@@ -96,9 +101,8 @@ void MapgenFarlandsParams::readParams(const Settings *settings)
 	settings->getS16NoEx("mgfarlands_dungeon_ymin",         dungeon_ymin);
 	settings->getS16NoEx("mgfarlands_dungeon_ymax",         dungeon_ymax);
 
-	settings->getNoiseParams("mgfarlands_np_far_low",      np_far_low);
-	settings->getNoiseParams("mgfarlands_np_far_high",     np_far_high);
-	settings->getNoiseParams("mgfarlands_np_far_select",   np_far_select);
+	settings->getNoiseParams("mgfarlands_np_wall_noise",   np_wall_noise);
+	settings->getNoiseParams("mgfarlands_np_shelf_noise",  np_shelf_noise);
 	settings->getNoiseParams("mgfarlands_np_filler_depth", np_filler_depth);
 	settings->getNoiseParams("mgfarlands_np_cave1",        np_cave1);
 	settings->getNoiseParams("mgfarlands_np_cave2",        np_cave2);
@@ -108,9 +112,10 @@ void MapgenFarlandsParams::readParams(const Settings *settings)
 
 void MapgenFarlandsParams::writeParams(Settings *settings) const
 {
-	settings->setFloat("mgfarlands_stretch_x", stretch_x);
-	settings->setFloat("mgfarlands_stretch_y", stretch_y);
-	settings->setFloat("mgfarlands_stretch_z", stretch_z);
+	settings->setS16("mgfarlands_corridor_width", corridor_width);
+	settings->setS16("mgfarlands_wall_thickness", wall_thickness);
+	settings->setS16("mgfarlands_shelf_spacing",  shelf_spacing);
+	settings->setS16("mgfarlands_shelf_height",   shelf_height);
 
 	settings->setFloat("mgfarlands_cave_width",         cave_width);
 	settings->setS16("mgfarlands_large_cave_depth",     large_cave_depth);
@@ -125,9 +130,8 @@ void MapgenFarlandsParams::writeParams(Settings *settings) const
 	settings->setS16("mgfarlands_dungeon_ymin",         dungeon_ymin);
 	settings->setS16("mgfarlands_dungeon_ymax",         dungeon_ymax);
 
-	settings->setNoiseParams("mgfarlands_np_far_low",      np_far_low);
-	settings->setNoiseParams("mgfarlands_np_far_high",     np_far_high);
-	settings->setNoiseParams("mgfarlands_np_far_select",   np_far_select);
+	settings->setNoiseParams("mgfarlands_np_wall_noise",   np_wall_noise);
+	settings->setNoiseParams("mgfarlands_np_shelf_noise",  np_shelf_noise);
 	settings->setNoiseParams("mgfarlands_np_filler_depth", np_filler_depth);
 	settings->setNoiseParams("mgfarlands_np_cave1",        np_cave1);
 	settings->setNoiseParams("mgfarlands_np_cave2",        np_cave2);
@@ -141,22 +145,15 @@ void MapgenFarlandsParams::setDefaultSettings(Settings *settings)
 
 int MapgenFarlands::getSpawnLevelAtPoint(v2s16 p)
 {
-	for (s16 y = 120; y >= -60; y--) {
-		float sx = p.X * stretch_x;
-		float sy = y * stretch_y;
-		float sz = p.Y * stretch_z;
+	s16 period = corridor_width + wall_thickness;
+	s16 mod_x = mymod(p.X, period);
+	s16 mod_z = mymod(p.Y, period);
 
-		float n_low    = NoiseFractal3D(&noise_far_low->np, sx, sy, sz, seed);
-		float n_high   = NoiseFractal3D(&noise_far_high->np, sx, sy, sz, seed + 101);
-		float n_select = rangelim(NoiseFractal3D(&noise_far_select->np, p.X, y, p.Y, seed + 202), 0.0f, 1.0f);
-
-		float density = n_low + n_select * (n_high - n_low) - (y - water_level) * 0.8f;
-
-		if (density > 0.0f)
-			return y + 2;
+	bool is_wall = (mod_x < wall_thickness || mod_z < wall_thickness);
+	if (is_wall) {
+		return 16;
 	}
-
-	return MAX_MAP_GENERATION_LIMIT;
+	return 1;
 }
 
 void MapgenFarlands::makeChunk(BlockMakeData *data)
@@ -225,28 +222,50 @@ s16 MapgenFarlands::generateTerrain()
 
 	s16 stone_surface_max_y = -MAX_MAP_GENERATION_LIMIT;
 
-	// 生成高度拉伸后的 3D 噪声
-	noise_far_low->noiseMap3D(node_min.X * stretch_x, (node_min.Y - 1) * stretch_y, node_min.Z * stretch_z);
-	noise_far_high->noiseMap3D(node_min.X * stretch_x, (node_min.Y - 1) * stretch_y, node_min.Z * stretch_z);
-	noise_far_select->noiseMap3D(node_min.X, node_min.Y - 1, node_min.Z);
+	noise_wall_noise->noiseMap2D(node_min.X, node_min.Z);
+	noise_shelf_noise->noiseMap3D(node_min.X, node_min.Y - 1, node_min.Z);
 
-	u32 index = 0;
+	u32 index3d = 0;
 	const v3s32 &em = vm->m_area.getExtent();
+	s16 period = corridor_width + wall_thickness;
 
 	for (s16 z = node_min.Z; z <= node_max.Z; z++) {
+		s16 mod_z = mymod(z, period);
+		bool is_wall_z = (mod_z < wall_thickness);
+		bool is_near_wall_z = (mod_z < wall_thickness + 4 || mod_z > period - 4);
+
 		for (s16 y = node_min.Y - 1; y <= node_max.Y + 1; y++) {
 			u32 vi = vm->m_area.index(node_min.X, y, z);
-			for (s16 x = node_min.X; x <= node_max.X; x++, vi++, index++) {
+			s16 mod_y = mymod(y, shelf_spacing);
+			bool is_shelf_layer = (mod_y < shelf_height);
+
+			for (s16 x = node_min.X; x <= node_max.X; x++, vi++, index3d++) {
 				if (vm->m_data[vi].getContent() != CONTENT_IGNORE)
 					continue;
 
-				float n_low    = noise_far_low->result[index];
-				float n_high   = noise_far_high->result[index];
-				float n_select = rangelim(noise_far_select->result[index], 0.0f, 1.0f);
+				s16 mod_x = mymod(x, period);
+				bool is_wall_x = (mod_x < wall_thickness);
+				bool is_near_wall_x = (mod_x < wall_thickness + 4 || mod_x > period - 4);
 
-				float density = n_low + n_select * (n_high - n_low) - (y - water_level) * 0.8f;
+				u32 index2d = (z - node_min.Z) * csize.X + (x - node_min.X);
+				float wall_n = noise_wall_noise->result[index2d];
+				float shelf_n = noise_shelf_noise->result[index3d];
 
-				if (density > 0.0f) {
+				bool is_solid = false;
+
+				// 1. AvM 正交巨型立墙 (Orthogonal Wall Curtains)
+				if (is_wall_x || is_wall_z) {
+					if (wall_n > -0.5f)
+						is_solid = true;
+				}
+
+				// 2. AvM 多层悬空走廊阶梯/搁板 (Multi-tiered Horizontal Ledges & Steps)
+				if (is_shelf_layer && (is_near_wall_x || is_near_wall_z)) {
+					if (shelf_n > -0.4f)
+						is_solid = true;
+				}
+
+				if (is_solid) {
 					vm->m_data[vi] = n_stone;
 					if (y > stone_surface_max_y)
 						stone_surface_max_y = y;
