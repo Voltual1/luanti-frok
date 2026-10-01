@@ -15,6 +15,25 @@ struct MapgenSkygridParams : public MapgenParams
 {
 	s16 grid_spacing = 4;
 
+	float cave_width = 0.09f;
+	s16 large_cave_depth = -33;
+	u16 small_cave_num_min = 0;
+	u16 small_cave_num_max = 0;
+	u16 large_cave_num_min = 0;
+	u16 large_cave_num_max = 2;
+	float large_cave_flooded = 0.5f;
+	s16 cavern_limit = -256;
+	s16 cavern_taper = 256;
+	float cavern_threshold = 0.7f;
+	s16 dungeon_ymin = -31000;
+	s16 dungeon_ymax = 31000;
+
+	NoiseParams np_filler_depth;
+	NoiseParams np_cave1;
+	NoiseParams np_cave2;
+	NoiseParams np_cavern;
+	NoiseParams np_dungeons;
+
 	MapgenSkygridParams();
 	~MapgenSkygridParams() = default;
 
@@ -23,16 +42,17 @@ struct MapgenSkygridParams : public MapgenParams
 	void setDefaultSettings(Settings *settings);
 };
 
-class MapgenSkygrid : public Mapgen
+class MapgenSkygrid : public MapgenBasic
 {
 public:
 	MapgenSkygrid(MapgenSkygridParams *params, EmergeParams *emerge);
-	~MapgenSkygrid() = default;
+	~MapgenSkygrid();
 
 	virtual MapgenType getType() const { return MAPGEN_SKYGRID; }
 
 	virtual void makeChunk(BlockMakeData *data);
 	int getSpawnLevelAtPoint(v2s16 p);
+	s16 generateTerrain();
 
 private:
 	s16 grid_spacing;
