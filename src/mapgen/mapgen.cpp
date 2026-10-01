@@ -33,6 +33,7 @@
 #include "mapgen_skygrid.h"
 #include "mapgen_glitch.h"
 #include "mapgen_farlands.h"
+#include "mapgen_backrooms.h"
 #include "cavegen.h"
 #include "dungeongen.h"
 
@@ -182,6 +183,8 @@ Mapgen *Mapgen::createMapgen(MapgenType mgtype, MapgenParams *params,
 		return new MapgenGlitch((MapgenGlitchParams *)params, emerge);
 	case MAPGEN_FARLANDS:
 		return new MapgenFarlands((MapgenFarlandsParams *)params, emerge);
+	case MAPGEN_BACKROOMS:
+		return new MapgenBackrooms((MapgenBackroomsParams *)params, emerge);
 	default:
 		return nullptr;
 	}
@@ -215,6 +218,8 @@ MapgenParams *Mapgen::createMapgenParams(MapgenType mgtype)
 		return new MapgenGlitchParams;
 	case MAPGEN_FARLANDS:
 		return new MapgenFarlandsParams;
+	case MAPGEN_BACKROOMS:
+		return new MapgenBackroomsParams;
 	default:
 		return nullptr;
 	}
@@ -236,8 +241,10 @@ void Mapgen::setDefaultSettings(Settings *settings)
 
 	for (int i = 0; i < (int)MAPGEN_INVALID; ++i) {
 		MapgenParams *params = createMapgenParams((MapgenType)i);
-		params->setDefaultSettings(settings);
-		delete params;
+		if (params) {
+			params->setDefaultSettings(settings);
+			delete params;
+		}
 	}
 }
 
