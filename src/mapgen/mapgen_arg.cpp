@@ -29,6 +29,17 @@ MapgenARG::MapgenARG(MapgenARGParams *params, EmergeParams *emerge)
 	spflags            = params->spflags;
 	web_thickness      = params->web_thickness;
 	web_thickness_fine = params->web_thickness_fine;
+
+	cave_width         = params->cave_width;
+	large_cave_depth   = params->large_cave_depth;
+	small_cave_num_min = params->small_cave_num_min;
+	small_cave_num_max = params->small_cave_num_max;
+	large_cave_num_min = params->large_cave_num_min;
+	large_cave_num_max = params->large_cave_num_max;
+	large_cave_flooded = params->large_cave_flooded;
+	cavern_limit       = params->cavern_limit;
+	cavern_taper       = params->cavern_taper;
+	cavern_threshold   = params->cavern_threshold;
 	dungeon_ymin       = params->dungeon_ymin;
 	dungeon_ymax       = params->dungeon_ymax;
 
@@ -71,6 +82,17 @@ void MapgenARGParams::readParams(const Settings *settings)
 {
 	settings->getFloatNoEx("mgarg_web_thickness",      web_thickness);
 	settings->getFloatNoEx("mgarg_web_thickness_fine", web_thickness_fine);
+
+	settings->getFloatNoEx("mgarg_cave_width",         cave_width);
+	settings->getS16NoEx("mgarg_large_cave_depth",     large_cave_depth);
+	settings->getU16NoEx("mgarg_small_cave_num_min",   small_cave_num_min);
+	settings->getU16NoEx("mgarg_small_cave_num_max",   small_cave_num_max);
+	settings->getU16NoEx("mgarg_large_cave_num_min",   large_cave_num_min);
+	settings->getU16NoEx("mgarg_large_cave_num_max",   large_cave_num_max);
+	settings->getFloatNoEx("mgarg_large_cave_flooded", large_cave_flooded);
+	settings->getS16NoEx("mgarg_cavern_limit",         cavern_limit);
+	settings->getS16NoEx("mgarg_cavern_taper",         cavern_taper);
+	settings->getFloatNoEx("mgarg_cavern_threshold",   cavern_threshold);
 	settings->getS16NoEx("mgarg_dungeon_ymin",         dungeon_ymin);
 	settings->getS16NoEx("mgarg_dungeon_ymax",         dungeon_ymax);
 
@@ -89,6 +111,17 @@ void MapgenARGParams::writeParams(Settings *settings) const
 {
 	settings->setFloat("mgarg_web_thickness",      web_thickness);
 	settings->setFloat("mgarg_web_thickness_fine", web_thickness_fine);
+
+	settings->setFloat("mgarg_cave_width",         cave_width);
+	settings->setS16("mgarg_large_cave_depth",     large_cave_depth);
+	settings->setU16("mgarg_small_cave_num_min",   small_cave_num_min);
+	settings->setU16("mgarg_small_cave_num_max",   small_cave_num_max);
+	settings->setU16("mgarg_large_cave_num_min",   large_cave_num_min);
+	settings->setU16("mgarg_large_cave_num_max",   large_cave_num_max);
+	settings->setFloat("mgarg_large_cave_flooded", large_cave_flooded);
+	settings->setS16("mgarg_cavern_limit",         cavern_limit);
+	settings->setS16("mgarg_cavern_taper",         cavern_taper);
+	settings->setFloat("mgarg_cavern_threshold",   cavern_threshold);
 	settings->setS16("mgarg_dungeon_ymin",         dungeon_ymin);
 	settings->setS16("mgarg_dungeon_ymax",         dungeon_ymax);
 
@@ -155,7 +188,7 @@ void MapgenARG::makeChunk(BlockMakeData *data)
 
 	if (flags & MG_CAVES) {
 		generateCavesNoiseIntersection(stone_surface_max_y);
-		generateCavesRandomWalk(stone_surface_max_y, -33);
+		generateCavesRandomWalk(stone_surface_max_y, large_cave_depth);
 	}
 
 	if (flags & MG_ORES)

@@ -15,6 +15,17 @@ struct MapgenARGParams : public MapgenParams
 {
 	float web_thickness = 0.42f;
 	float web_thickness_fine = 0.32f;
+
+	float cave_width = 0.09f;
+	s16 large_cave_depth = -33;
+	u16 small_cave_num_min = 0;
+	u16 small_cave_num_max = 0;
+	u16 large_cave_num_min = 0;
+	u16 large_cave_num_max = 2;
+	float large_cave_flooded = 0.5f;
+	s16 cavern_limit = -256;
+	s16 cavern_taper = 256;
+	float cavern_threshold = 0.7f;
 	s16 dungeon_ymin = -31000;
 	s16 dungeon_ymax = 31000;
 
