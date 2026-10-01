@@ -97,7 +97,6 @@ private:
 
 // Order must match the order of 'static MapgenDesc g_reg_mapgens[]' in mapgen.cpp
 enum MapgenType {
-	MAPGEN_RANDOMIZER,
 	MAPGEN_V7,
 	MAPGEN_VALLEYS,
 	MAPGEN_CARPATHIAN,
