@@ -11,7 +11,6 @@
 #include "nodedef.h"
 #include "util/string.h"
 #include "util/container.h"
-#include "mapgen_layered.h"
 #include <utility>
 #include <set>
 
