@@ -31,6 +31,7 @@
 #include "mapgen_singlenode.h"
 #include "mapgen_arg.h"
 #include "mapgen_skygrid.h"
+#include "mapgen_glitch.h"
 #include "cavegen.h"
 #include "dungeongen.h"
 
@@ -82,6 +83,7 @@ static MapgenDesc g_reg_mapgens[] = {
 	{"v6",         true},
 	{"arg",        true},
 	{"skygrid",    true},
+	{"glitch",     true},
 };
 
 static_assert(
@@ -173,6 +175,8 @@ Mapgen *Mapgen::createMapgen(MapgenType mgtype, MapgenParams *params,
 		return new MapgenARG((MapgenARGParams *)params, emerge);
 	case MAPGEN_SKYGRID:
 		return new MapgenSkygrid((MapgenSkygridParams *)params, emerge);
+	case MAPGEN_GLITCH:
+		return new MapgenGlitch((MapgenGlitchParams *)params, emerge);
 	default:
 		return nullptr;
 	}
@@ -202,6 +206,8 @@ MapgenParams *Mapgen::createMapgenParams(MapgenType mgtype)
 		return new MapgenARGParams;
 	case MAPGEN_SKYGRID:
 		return new MapgenSkygridParams;
+	case MAPGEN_GLITCH:
+		return new MapgenGlitchParams;
 	default:
 		return nullptr;
 	}
