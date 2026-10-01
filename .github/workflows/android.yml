@@ -72,6 +72,13 @@ jobs:
       - name: Build Debug APK (arm64 only)
         run: cd android; ./gradlew assembleRelease --build-cache
 
+      - name: Get version info
+        id: version
+        shell: bash
+        run: |
+          echo "BUILD_VERSION=android-build-$(date +%Y%m%d_%H%M%S)-${GITHUB_SHA:0:8}" >> $GITHUB_OUTPUT
+          echo "TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")" >> $GITHUB_OUTPUT
+
       - name: Create Draft Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v2
@@ -81,6 +88,7 @@ jobs:
           body: |
             ### Android 构建成功
             - 提交: `${{ github.sha }}`
+            - 构建时间: `${{ steps.version.outputs.TIMESTAMP }}`
           draft: true
           fail_on_unmatched_files: false
           files: |
