@@ -72,7 +72,7 @@ jobs:
             luanti-android-deps-arm64-
 
       - name: Build APK
-        run: cd android; ./gradlew assembleDebug --build-cache
+        run: cd android; ./gradlew assembleRelease --build-cache
 
       - name: Get version info
         id: version
