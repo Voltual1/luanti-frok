@@ -224,5 +224,8 @@ s16 MapgenGlitch::generateTerrainForChunk(s32 chunk_seed)
 		}
 	}
 
-	return stone_surface_max_y;
+	if (stone_surface_max_y < node_min.Y)
+	stone_surface_max_y = node_min.Y;
+
+return stone_surface_max_y;
 }

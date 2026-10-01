@@ -275,6 +275,9 @@ s16 MapgenBackrooms::generateTerrain()
 			}
 		}
 	}
+		
+	if (stone_surface_max_y < node_min.Y)
+	stone_surface_max_y = node_min.Y;
 
-	return stone_surface_max_y;
+return stone_surface_max_y;
 }

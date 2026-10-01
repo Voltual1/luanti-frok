@@ -235,5 +235,8 @@ s16 MapgenSkygrid::generateTerrain()
 		}
 	}
 
-	return stone_surface_max_y;
+	if (stone_surface_max_y < node_min.Y)
+	stone_surface_max_y = node_min.Y;
+
+return stone_surface_max_y;
 }
