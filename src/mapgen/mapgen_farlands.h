@@ -28,7 +28,7 @@ struct MapgenFarlandsParams : public MapgenParams
 
 	NoiseParams np_far1;
 	NoiseParams np_far2;
-	NoiseParams np_far3;
+	NoiseParams np_far_select;
 	NoiseParams np_filler_depth;
 	NoiseParams np_cave1;
 	NoiseParams np_cave2;
@@ -58,5 +58,5 @@ public:
 private:
 	Noise *noise_far1 = nullptr;
 	Noise *noise_far2 = nullptr;
-	Noise *noise_far3 = nullptr;
+	Noise *noise_far_select = nullptr;
 };

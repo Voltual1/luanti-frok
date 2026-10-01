@@ -24,12 +24,6 @@
 #include "util/numeric.h"
 #include <cmath>
 
-static inline s16 mymod(s16 a, s16 b)
-{
-	s16 r = a % b;
-	return r < 0 ? r + b : r;
-}
-
 MapgenFarlands::MapgenFarlands(MapgenFarlandsParams *params, EmergeParams *emerge)
 	: MapgenBasic(MAPGEN_FARLANDS, params, emerge)
 {
@@ -135,12 +129,12 @@ void MapgenFarlandsParams::setDefaultSettings(Settings *settings)
 
 int MapgenFarlands::getSpawnLevelAtPoint(v2s16 p)
 {
-	for (s16 y = 120; y >= -60; y--) {
+	for (s16 y = 60; y >= -60; y--) {
 		float n1 = NoiseFractal3D(&noise_far1->np, p.X, y, p.Y, seed);
 		float n2 = NoiseFractal3D(&noise_far2->np, p.X, y, p.Y, seed + 101);
 		float n_select = rangelim(NoiseFractal3D(&noise_far_select->np, p.X, y, p.Y, seed + 202), 0.0f, 1.0f);
 
-		float density = n1 + n_select * (n2 - n1) - (y - water_level) * 0.4f;
+		float density = n1 + n_select * (n2 - n1) - (y - water_level) * 0.35f;
 
 		if (density > 0.0f)
 			return y + 2;
@@ -233,6 +227,7 @@ s16 MapgenFarlands::generateTerrain()
 				float n2       = noise_far2->result[index];
 				float n_select = rangelim(noise_far_select->result[index], 0.0f, 1.0f);
 
+				// 3D 瑞士奶酪密度场：在正交轴向上产生自然的洞穴长廊与大峡谷
 				float density  = n1 + n_select * (n2 - n1) - (y - water_level) * 0.35f;
 
 				if (density > 0.0f) {
