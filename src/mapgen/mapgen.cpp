@@ -34,6 +34,7 @@
 #include "mapgen_glitch.h"
 #include "mapgen_farlands.h"
 #include "mapgen_backrooms.h"
+#include "mapgen_layered.h"
 #include "cavegen.h"
 #include "dungeongen.h"
 
@@ -88,7 +89,7 @@ static MapgenDesc g_reg_mapgens[] = {
 	{"glitch",     true},
 	{"farlands",   true},
 	{"backrooms",  true},
-	{"layered",  true},
+	{"layered",    true},
 };
 
 static_assert(
@@ -108,19 +109,6 @@ Mapgen::Mapgen(int mapgenid, MapgenParams *params, EmergeParams *emerge) :
 	flags        = params->flags;
 	csize        = params->chunksize * MAP_BLOCKSIZE;
 
-	/*
-		We are losing half our entropy by doing this, but it is necessary to
-		preserve reverse compatibility.  If the top half of our current 64 bit
-		seeds ever starts getting used, existing worlds will break due to a
-		different hash outcome and no way to differentiate between versions.
-
-		A solution could be to add a new bit to designate that the top half of
-		the seed value should be used, essentially a 1-bit version code, but
-		this would require increasing the total size of a seed to 9 bytes (yuck)
-
-		It's probably okay if this never gets fixed.  4.2 billion possibilities
-		ought to be enough for anyone.
-	*/
 	seed = (s32)params->seed;
 
 	m_emerge  = emerge;
@@ -186,8 +174,8 @@ Mapgen *Mapgen::createMapgen(MapgenType mgtype, MapgenParams *params,
 		return new MapgenFarlands((MapgenFarlandsParams *)params, emerge);
 	case MAPGEN_BACKROOMS:
 		return new MapgenBackrooms((MapgenBackroomsParams *)params, emerge);
-	case MAPGEN_BACKROOMS:
-		return new MAPGEN_LAYERED((MapgenLayeredParams *)params, emerge);
+	case MAPGEN_LAYERED:
+		return new MapgenLayered((MapgenLayeredParams *)params, emerge);
 	default:
 		return nullptr;
 	}
@@ -264,14 +252,12 @@ u32 Mapgen::getBlockSeed(v3s16 p, s32 seed)
 
 u32 Mapgen::getBlockSeed2(v3s16 p, s32 seed)
 {
-	// Multiply by unsigned number to avoid signed overflow (UB)
 	u32 n = 1619U * p.X + 31337U * p.Y + 52591U * p.Z + 1013U * seed;
 	n = (n >> 13) ^ n;
 	return (n * (n * n * 60493 + 19990303) + 1376312589);
 }
 
 
-// Returns -MAX_MAP_GENERATION_LIMIT if not found
 s16 Mapgen::findGroundLevel(v2s16 p2d, s16 ymin, s16 ymax)
 {
 	const v3s32 &em = vm->m_area.getExtent();
@@ -289,7 +275,6 @@ s16 Mapgen::findGroundLevel(v2s16 p2d, s16 ymin, s16 ymax)
 }
 
 
-// Returns -MAX_MAP_GENERATION_LIMIT if not found or if ground is found first
 s16 Mapgen::findLiquidSurface(v2s16 p2d, s16 ymin, s16 ymax)
 {
 	const v3s32 &em = vm->m_area.getExtent();
@@ -315,7 +300,6 @@ void Mapgen::updateHeightmap(v3s16 nmin, v3s16 nmax)
 	if (!heightmap)
 		return;
 
-	//TimeTaker t("Mapgen::updateHeightmap", NULL, PRECISION_MICRO);
 	int index = 0;
 	for (s16 z = nmin.Z; z <= nmax.Z; z++) {
 		for (s16 x = nmin.X; x <= nmax.X; x++, index++) {
@@ -413,28 +397,21 @@ void Mapgen::updateLiquid(UniqueQueue<v3s16> *trans_liquid, v3s16 nmin, v3s16 nm
 			}
 
 			if (isignored || wasignored || isliquid == wasliquid) {
-				// Neither topmost node of liquid column nor topmost node below column
 				waschecked = false;
 				waspushed = false;
 			} else if (isliquid) {
-				// This is the topmost node in the column
 				bool ispushed = false;
 				if (isLiquidHorizontallyFlowable(vi, em)) {
 					trans_liquid->push_back(v3s16(x, y, z));
 					ispushed = true;
 				}
-				// Remember waschecked and waspushed to avoid repeated
-				// checks/pushes in case the column consists of only this node
 				waschecked = true;
 				waspushed = ispushed;
 			} else {
-				// This is the topmost node below a liquid column
 				u32 vi_above = vi;
 				VoxelArea::add_y(em, vi_above, 1);
 				if (!waspushed && (ndef->get(vm->m_data[vi]).floodable ||
 						(!waschecked && isLiquidHorizontallyFlowable(vi_above, em)))) {
-					// Push back the lowest node in the column which is one
-					// node above this one
 					trans_liquid->push_back(v3s16(x, y + 1, z));
 				}
 			}
@@ -472,7 +449,6 @@ void Mapgen::lightSpread(VoxelArea &a, std::queue<std::pair<v3s16, u8>> &queue,
 	u32 vi = vm->m_area.index(p);
 	MapNode &n = vm->m_data[vi];
 
-	// Decay light in each of the banks separately
 	u8 light_day = light & 0x0F;
 	if (light_day > 0)
 		light_day -= 0x01;
@@ -481,21 +457,16 @@ void Mapgen::lightSpread(VoxelArea &a, std::queue<std::pair<v3s16, u8>> &queue,
 	if (light_night > 0)
 		light_night -= 0x10;
 
-	// Bail out only if we have no more light from either bank to propagate, or
-	// we hit a solid block that light cannot pass through.
 	if ((light_day  <= (n.param1 & 0x0F) &&
 			light_night <= (n.param1 & 0xF0)) ||
 			!ndef->getLightingFlags(n).light_propagates)
 		return;
 
-	// MYMAX still needed here because we only exit early if both banks have
-	// nothing to propagate anymore.
 	light = MYMAX(light_day, n.param1 & 0x0F) |
 			MYMAX(light_night, n.param1 & 0xF0);
 
 	n.param1 = light;
 
-	// add to queue
 	queue.emplace(p, light);
 }
 
@@ -512,17 +483,12 @@ void Mapgen::calcLighting(v3s16 nmin, v3s16 nmax, v3s16 full_nmin, v3s16 full_nm
 
 void Mapgen::propagateSunlight(v3s16 nmin, v3s16 nmax, bool propagate_shadow)
 {
-	//TimeTaker t("propagateSunlight");
 	VoxelArea a(nmin, nmax);
 	bool block_is_underground = (water_level >= nmax.Y);
 	const v3s32 &em = vm->m_area.getExtent();
 
-	// NOTE: Direct access to the low 4 bits of param1 is okay here because,
-	// by definition, sunlight will never be in the night lightbank.
-
 	for (int z = a.MinEdge.Z; z <= a.MaxEdge.Z; z++) {
 		for (int x = a.MinEdge.X; x <= a.MaxEdge.X; x++) {
-			// see if we can get a light value from the overtop
 			u32 i = vm->m_area.index(x, a.MaxEdge.Y + 1, z);
 			if (vm->m_data[i].getContent() == CONTENT_IGNORE) {
 				if (block_is_underground)
@@ -542,13 +508,11 @@ void Mapgen::propagateSunlight(v3s16 nmin, v3s16 nmax, bool propagate_shadow)
 			}
 		}
 	}
-	//printf("propagateSunlight: %dms\n", t.stop());
 }
 
 
 void Mapgen::spreadLight(const v3s16 &nmin, const v3s16 &nmax)
 {
-	//TimeTaker t("spreadLight");
 	std::queue<std::pair<v3s16, u8>> queue;
 	VoxelArea a(nmin, nmax);
 
@@ -564,9 +528,6 @@ void Mapgen::spreadLight(const v3s16 &nmin, const v3s16 &nmax)
 				if (!cf.light_propagates)
 					continue;
 
-				// TODO(hmmmmm): Abstract away direct param1 accesses with a
-				// wrapper, but something lighter than MapNode::get/setLight
-
 				u8 light_produced = cf.light_source;
 				if (light_produced)
 					n.param1 = light_produced | (light_produced << 4);
@@ -574,7 +535,6 @@ void Mapgen::spreadLight(const v3s16 &nmin, const v3s16 &nmax)
 				u8 light = n.param1;
 				if (light) {
 					const v3s16 p(x, y, z);
-					// spread to all 6 neighbor nodes
 					for (const auto &dir : g_6dirs)
 						lightSpread(a, queue, p + dir, light);
 				}
@@ -584,13 +544,10 @@ void Mapgen::spreadLight(const v3s16 &nmin, const v3s16 &nmax)
 
 	while (!queue.empty()) {
 		const auto &i = queue.front();
-		// spread to all 6 neighbor nodes
 		for (const auto &dir : g_6dirs)
 			lightSpread(a, queue, i.first + dir, i.second);
 		queue.pop();
 	}
-
-	//printf("spreadLight: %lums\n", t.stop());
 }
 
 
@@ -603,42 +560,23 @@ MapgenBasic::MapgenBasic(int mapgenid, MapgenParams *params, EmergeParams *emerg
 {
 	this->m_bmgr   = emerge->biomemgr;
 
-	//// Here, 'stride' refers to the number of elements needed to skip to index
-	//// an adjacent element for that coordinate in noise/height/biome maps
-	//// (*not* vmanip content map!)
-
-	// Note there is no X stride explicitly defined.  Items adjacent in the X
-	// coordinate are assumed to be adjacent in memory as well (i.e. stride of 1).
-
-	// Number of elements to skip to get to the next Y coordinate
 	this->ystride = csize.X;
-
-	// Number of elements to skip to get to the next Z coordinate
 	this->zstride = csize.X * csize.Y;
-
-	// Z-stride value for maps oversized for 1-down overgeneration
 	this->zstride_1d = csize.X * (csize.Y + 1);
-
-	// Z-stride value for maps oversized for 1-up 1-down overgeneration
 	this->zstride_1u1d = csize.X * (csize.Y + 2);
 
-	//// Allocate heightmap
 	this->heightmap = new s16[csize.X * csize.Z];
 
-	//// Initialize biome generator
 	biomegen = emerge->biomegen;
 	biomegen->assertChunkSize(csize);
 	biomemap = biomegen->biomemap;
 
-	//// Look up some commonly used content
 	c_stone              = ndef->getId("mapgen_stone");
 	c_water_source       = ndef->getId("mapgen_water_source");
 	c_river_water_source = ndef->getId("mapgen_river_water_source");
 	c_lava_source        = ndef->getId("mapgen_lava_source");
 	c_cobble             = ndef->getId("mapgen_cobble");
 
-	// Fall back to more basic content if not defined.
-	// Lava falls back to water as both are suitable as cave liquids.
 	if (c_lava_source == CONTENT_IGNORE)
 		c_lava_source = c_water_source;
 
@@ -659,7 +597,6 @@ MapgenBasic::~MapgenBasic()
 
 void MapgenBasic::generateBiomes()
 {
-	// can't generate biomes without a biome generator!
 	assert(biomegen);
 	assert(biomemap);
 
@@ -680,8 +617,6 @@ void MapgenBasic::generateBiomes()
 
 		s16 biome_y_next = biomegen->getNextTransitionY(node_max.Y);
 
-		// Check node at base of mapchunk above, either a node of a previously
-		// generated mapchunk or if not, a node of overgenerated base terrain.
 		content_t c_above = vm->m_data[vi + em.X].getContent();
 		bool air_above = c_above == CONTENT_AIR;
 		bool river_water_above = c_above == c_river_water_source;
@@ -689,43 +624,27 @@ void MapgenBasic::generateBiomes()
 
 		biomemap[index] = BIOME_NONE;
 
-		// If there is air or water above enable top/filler placement, otherwise force
-		// nplaced to stone level by setting a number exceeding any possible filler depth.
 		u16 nplaced = (air_above || water_above) ? 0 : U16_MAX;
 
 		for (s16 y = node_max.Y; y >= node_min.Y; y--) {
 			content_t c = vm->m_data[vi].getContent();
 			const bool biome_outdated = !biome || y <= biome_y_next;
-			// Biome is (re)calculated:
-			// 1. At the surface of stone below air or water.
-			// 2. At the surface of water below air.
-			// 3. When stone or water is detected but biome has not yet been calculated.
-			// 4. When stone or water is detected just below a biome's lower limit.
 			bool is_stone_surface = (c == c_stone) &&
-				(air_above || water_above || biome_outdated); // 1, 3, 4
+				(air_above || water_above || biome_outdated);
 
 			bool is_water_surface =
 				(c == c_water_source || c == c_river_water_source) &&
-				(air_above || biome_outdated); // 2, 3, 4
+				(air_above || biome_outdated);
 
 			if (is_stone_surface || is_water_surface) {
 				if (biome_outdated) {
-					// (Re)calculate biome
 					biome = biomegen->getBiomeAtIndex(index, v3s16(x, y, z));
 					biome_y_next = biomegen->getNextTransitionY(y);
-
-					if (x == node_min.X && z == node_min.Z && false) {
-						dstream << "biomegen: biome at " << y << " is " << biome->name
-							<< ", next at " << biome_y_next << std::endl;
-					}
 				}
 
-				// Add biome to biomemap at first stone surface detected
 				if (biomemap[index] == BIOME_NONE && is_stone_surface)
 					biomemap[index] = biome->index;
 
-				// Store biome of first water surface detected, as a fallback
-				// entry for the biomemap.
 				if (water_biome_index == 0 && is_water_surface)
 					water_biome_index = biome->index;
 
@@ -740,10 +659,6 @@ void MapgenBasic::generateBiomes()
 			if (c == c_stone) {
 				content_t c_below = vm->m_data[vi - em.X].getContent();
 
-				// If the node below isn't solid, make this node stone, so that
-				// any top/filler nodes above are structurally supported.
-				// This is done by aborting the cycle of top/filler placement
-				// immediately by forcing nplaced to stone level.
 				if (c_below == CONTENT_AIR
 | c_below == c_water_source
 | c_below == c_river_water_source)
@@ -754,7 +669,7 @@ void MapgenBasic::generateBiomes()
 						vm->m_data[vi] = MapNode(biome->c_riverbed);
 						nplaced++;
 					} else {
-						nplaced = U16_MAX;  // Disable top/filler placement
+						nplaced = U16_MAX;
 						river_water_above = false;
 					}
 				} else if (nplaced < depth_top) {
@@ -765,7 +680,7 @@ void MapgenBasic::generateBiomes()
 					nplaced++;
 				} else {
 					vm->m_data[vi] = MapNode(biome->c_stone);
-					nplaced = U16_MAX;  // Disable top/filler placement
+					nplaced = U16_MAX;
 				}
 
 				air_above = false;
@@ -773,30 +688,27 @@ void MapgenBasic::generateBiomes()
 			} else if (c == c_water_source) {
 				vm->m_data[vi] = MapNode((y > (s32)(water_level - depth_water_top))
 						? biome->c_water_top : biome->c_water);
-				nplaced = 0;  // Enable top/filler placement for next surface
+				nplaced = 0;
 				air_above = false;
 				water_above = true;
 			} else if (c == c_river_water_source) {
 				vm->m_data[vi] = MapNode(biome->c_river_water);
-				nplaced = 0;  // Enable riverbed placement for next surface
+				nplaced = 0;
 				air_above = false;
 				water_above = true;
 				river_water_above = true;
 			} else if (c == CONTENT_AIR) {
-				nplaced = 0;  // Enable top/filler placement for next surface
+				nplaced = 0;
 				air_above = true;
 				water_above = false;
-			} else {  // Possible various nodes overgenerated from neighboring mapchunks
-				nplaced = U16_MAX;  // Disable top/filler placement
+			} else {
+				nplaced = U16_MAX;
 				air_above = false;
 				water_above = false;
 			}
 
 			VoxelArea::add_y(em, vi, -1);
 		}
-		// If no stone surface detected in mapchunk column and a water surface
-		// biome fallback exists, add it to the biomemap. This avoids water
-		// surface decorations failing in deep water.
 		if (biomemap[index] == BIOME_NONE && water_biome_index != 0)
 			biomemap[index] = water_biome_index;
 	}
@@ -818,10 +730,6 @@ void MapgenBasic::dustTopNodes()
 		if (biome->c_dust == CONTENT_IGNORE)
 			continue;
 
-		// Check if mapchunk above has generated, if so, drop dust from 16 nodes
-		// above current mapchunk top, above decorations that will extend above
-		// the current mapchunk. If the mapchunk above has not generated, it
-		// will provide this required dust when it does.
 		u32 vi = vm->m_area.index(x, full_node_max.Y, z);
 		content_t c_full_max = vm->m_data[vi].getContent();
 		s16 y_start;
@@ -850,9 +758,6 @@ void MapgenBasic::dustTopNodes()
 
 		content_t c = vm->m_data[vi].getContent();
 		NodeDrawType dtype = ndef->get(c).drawtype;
-		// Only place on cubic, walkable, non-dust nodes.
-		// Dust check needed due to avoid double layer of dust caused by
-		// dropping dust from 16 nodes above mapchunk top.
 		if ((dtype == NDT_NORMAL ||
 				dtype == NDT_ALLFACES ||
 				dtype == NDT_ALLFACES_OPTIONAL ||
@@ -869,8 +774,6 @@ void MapgenBasic::dustTopNodes()
 
 void MapgenBasic::generateCavesNoiseIntersection(s16 max_stone_y)
 {
-	// cave_width >= 10 is used to disable generation and avoid the intensive
-	// 3D noise calculations. Tunnels already have zero width when cave_width > 1.
 	if (node_min.Y > max_stone_y || cave_width >= 10.0f)
 		return;
 
@@ -887,7 +790,6 @@ void MapgenBasic::generateCavesRandomWalk(s16 max_stone_y, s16 large_cave_ymax)
 		return;
 
 	PseudoRandom ps(blockseed + 21343);
-	// Small randomwalk caves
 	u32 num_small_caves = ps.range(small_cave_num_min, small_cave_num_max);
 
 	for (u32 i = 0; i < num_small_caves; i++) {
@@ -899,9 +801,6 @@ void MapgenBasic::generateCavesRandomWalk(s16 max_stone_y, s16 large_cave_ymax)
 	if (node_max.Y > large_cave_ymax)
 		return;
 
-	// Large randomwalk caves below 'large_cave_ymax'.
-	// 'large_cave_ymax' can differ from the 'large_cave_depth' mapgen parameter,
-	// it is set to world base to disable large caves in or near caverns.
 	u32 num_large_caves = ps.range(large_cave_num_min, large_cave_num_max);
 
 	for (u32 i = 0; i < num_large_caves; i++) {
@@ -953,32 +852,23 @@ void MapgenBasic::generateDungeons(s16 max_stone_y)
 	dp.room_size_large_max = v3s16(16, 16, 16);
 	dp.large_room_chance   = (ps.range(1, 4) == 1) ? 8 : 0;
 	dp.diagonal_dirs       = ps.range(1, 8) == 1;
-	// Diagonal corridors must have 'hole' width >=2 to be passable
 	u8 holewidth           = (dp.diagonal_dirs) ? 2 : ps.range(1, 2);
 	dp.holesize            = v3s16(holewidth, 3, holewidth);
 	dp.corridor_len_min    = 1;
 	dp.corridor_len_max    = 13;
 
-	// Get biome at mapchunk midpoint
 	v3s16 chunk_mid = node_min + (node_max - node_min) / v3s16(2, 2, 2);
 	Biome *biome = (Biome *)biomegen->getBiomeAtPoint(chunk_mid);
 
-	// Use biome-defined dungeon nodes if defined
 	if (biome->c_dungeon != CONTENT_IGNORE) {
 		dp.c_wall = biome->c_dungeon;
-		// If 'node_dungeon_alt' is not defined by biome, it and dp.c_alt_wall
-		// become CONTENT_IGNORE which skips the alt wall node placement loop in
-		// dungeongen.cpp.
 		dp.c_alt_wall = biome->c_dungeon_alt;
-		// Stairs fall back to 'c_dungeon' if not defined by biome
 		dp.c_stair = (biome->c_dungeon_stair != CONTENT_IGNORE) ?
 			biome->c_dungeon_stair : biome->c_dungeon;
-	// Fallback to using cobble mapgen alias if defined
 	} else if (c_cobble != CONTENT_IGNORE) {
 		dp.c_wall     = c_cobble;
 		dp.c_alt_wall = CONTENT_IGNORE;
 		dp.c_stair    = c_cobble;
-	// Fallback to using biome-defined stone
 	} else {
 		dp.c_wall     = biome->c_stone;
 		dp.c_alt_wall = CONTENT_IGNORE;
@@ -1022,7 +912,6 @@ bool GenerateNotifier::addDecorationEvent(v3s16 pos, u32 id)
 {
 	if (!shouldNotifyOn(GENNOTIFY_DECORATION))
 		return false;
-	// check if data relating to this decoration was requested
 	assert(m_notify_on_deco_ids);
 	if (m_notify_on_deco_ids->find(id) == m_notify_on_deco_ids->cend())
 		return false;
@@ -1040,7 +929,6 @@ bool GenerateNotifier::setCustom(const std::string &key, const std::string &valu
 {
 	if (!shouldNotifyOn(GENNOTIFY_CUSTOM))
 		return false;
-	// check if this key was requested to be saved
 	assert(m_notify_on_custom);
 	if (m_notify_on_custom->count(key) == 0)
 		return false;
@@ -1054,7 +942,7 @@ void GenerateNotifier::getEvents(
 	std::map<std::string, std::vector<v3s16>> &event_map) const
 {
 	for (auto &gn : m_notify_events) {
-		assert(gn.type != GENNOTIFY_CUSTOM); // never stored in this list
+		assert(gn.type != GENNOTIFY_CUSTOM);
 
 		std::string name = (gn.type == GENNOTIFY_DECORATION) ?
 			"decoration#"+ itos(gn.id) :
@@ -1085,7 +973,6 @@ MapgenParams::~MapgenParams()
 
 void MapgenParams::readParams(const Settings *settings)
 {
-	// should always be used via MapSettingsManager
 	assert(settings != g_settings);
 
 	std::string seed_str;
@@ -1121,7 +1008,6 @@ void MapgenParams::readParams(const Settings *settings)
 		errorstream << "MapgenParams: invalid chunksize \"" << chunksize_str
 			<< "\"" << std::endl;
 	}
-	// Finally check the volume limit
 	if (u32 v = chunksize.X * chunksize.Y * chunksize.Z; v > MAX_CHUNK_VOLUME) {
 		errorstream << "MapgenParams: chunksize " << chunksize
 			<< " is too big (volume > " << MAX_CHUNK_VOLUME
@@ -1146,7 +1032,6 @@ void MapgenParams::writeParams(Settings *settings) const
 	settings->setS16("mapgen_limit", mapgen_limit);
 	settings->setFlagStr("mg_flags", flags, flagdesc_mapgen);
 
-	// Write as number if cubic, for backwards-compatibility
 	if (chunksize.X == chunksize.Y && chunksize.Y == chunksize.Z) {
 		settings->setS16("chunksize", chunksize.X);
 	} else {
@@ -1168,33 +1053,23 @@ s32 MapgenParams::getSpawnRangeMax()
 
 std::pair<v3s16, v3s16> get_mapgen_edges(s16 mapgen_limit, v3s16 chunksize)
 {
-	// Effective mapgen limit, in blocks
-	// Uses same calculation as ServerMap::blockpos_over_mapgen_limit(v3s16 p)
 	s16 mapgen_limit_b = rangelim(mapgen_limit,
 		0, MAX_MAP_GENERATION_LIMIT) / MAP_BLOCKSIZE;
-	// Effective mapgen limits, in nodes
 	s16 mapgen_limit_min = -mapgen_limit_b * MAP_BLOCKSIZE;
 	s16 mapgen_limit_max = (mapgen_limit_b + 1) * MAP_BLOCKSIZE - 1;
 
 	const auto &calculate = [&] (s16 cs) -> std::pair<s16, s16> {
-		// Central chunk offset, in blocks
 		s16 ccoff_b = -cs / 2;
-		// Chunksize, in nodes
 		s32 csize_n = cs * MAP_BLOCKSIZE;
-		// Minp/maxp of central chunk, in nodes
 		s16 ccmin = ccoff_b * MAP_BLOCKSIZE;
 		s16 ccmax = ccmin + csize_n - 1;
-		// Fullminp/fullmaxp of central chunk, in nodes
 		s16 ccfmin = ccmin - MAP_BLOCKSIZE;
 		s16 ccfmax = ccmax + MAP_BLOCKSIZE;
-		// Number of complete chunks from central chunk fullminp/fullmaxp
-		// to effective mapgen limits.
 		s16 numcmin = std::max((ccfmin - mapgen_limit_min) / csize_n, 0);
 		s16 numcmax = std::max((mapgen_limit_max - ccfmax) / csize_n, 0);
 		return {ccmin - numcmin * csize_n, ccmax + numcmax * csize_n};
 	};
 
-	// Mapgen edges, in nodes
 	v3s16 emin, emax;
 	std::tie(emin.X, emax.X) = calculate(chunksize.X);
 	std::tie(emin.Y, emax.Y) = calculate(chunksize.Y);
