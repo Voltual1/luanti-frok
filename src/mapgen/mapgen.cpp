@@ -29,6 +29,7 @@
 #include "mapgen_v7.h"
 #include "mapgen_valleys.h"
 #include "mapgen_singlenode.h"
+#include "mapgen_arg.h"
 #include "cavegen.h"
 #include "dungeongen.h"
 
@@ -78,6 +79,7 @@ static MapgenDesc g_reg_mapgens[] = {
 	{"fractal",    true},
 	{"singlenode", true},
 	{"v6",         true},
+	{"arg",        true},
 };
 
 static_assert(
@@ -165,6 +167,8 @@ Mapgen *Mapgen::createMapgen(MapgenType mgtype, MapgenParams *params,
 		return new MapgenV7((MapgenV7Params *)params, emerge);
 	case MAPGEN_VALLEYS:
 		return new MapgenValleys((MapgenValleysParams *)params, emerge);
+	case MAPGEN_ARG:
+		return new MapgenARG((MapgenARGParams *)params, emerge);
 	default:
 		return nullptr;
 	}
@@ -190,6 +194,8 @@ MapgenParams *Mapgen::createMapgenParams(MapgenType mgtype)
 		return new MapgenV7Params;
 	case MAPGEN_VALLEYS:
 		return new MapgenValleysParams;
+	case MAPGEN_ARG:
+		return new MapgenARGParams;
 	default:
 		return nullptr;
 	}
@@ -708,8 +714,8 @@ void MapgenBasic::generateBiomes()
 				// This is done by aborting the cycle of top/filler placement
 				// immediately by forcing nplaced to stone level.
 				if (c_below == CONTENT_AIR
-						|| c_below == c_water_source
-						|| c_below == c_river_water_source)
+| c_below == c_water_source
+| c_below == c_river_water_source)
 					nplaced = U16_MAX;
 
 				if (river_water_above) {
