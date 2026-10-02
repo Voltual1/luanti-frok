@@ -97,6 +97,9 @@ MapgenLayeredParams::MapgenLayeredParams() :
 	np_cavern       (0.0, 1.0,  v3f(384.0, 128.0, 384.0), 723,   5, 0.63, 2.0),
 	np_dungeons     (0.9, 0.5,  v3f(500.0, 500.0, 500.0), 0,     2, 0.8,  2.0)
 {
+	skygrid_y_min   = 1200;
+	arg_y_min       = 200;
+	overworld_y_min = -64;
 }
 
 void MapgenLayeredParams::readParams(const Settings *settings)
@@ -195,7 +198,7 @@ void MapgenLayered::makeChunk(BlockMakeData *data)
 
 	updateHeightmap(node_min, node_max);
 
-	// 仅主世界高度范围才运行生物群落与装饰
+	// 仅主世界及高空层才运行生物群落与装饰，下界/末地区间完全不干涉
 	if (node_max.Y >= overworld_y_min) {
 		if (biomegen) {
 			biomegen->calcBiomeNoise(node_min);
@@ -242,7 +245,7 @@ s16 MapgenLayered::generateTerrain()
 
 	s16 stone_surface_max_y = node_min.Y;
 
-	bool need_far = (node_max.Y >= overworld_y_min && node_min.Y < skygrid_y_min);
+	bool need_far = (node_max.Y >= overworld_y_min && node_min.Y < arg_y_min);
 	bool need_web = (node_max.Y >= arg_y_min && node_min.Y < skygrid_y_min);
 
 	if (need_far) {
@@ -268,27 +271,13 @@ s16 MapgenLayered::generateTerrain()
 				if (vm->m_data[vi].getContent() != CONTENT_IGNORE)
 					continue;
 
-				// 【下界维度区间】Y in [-29000, -28000]
-				// 预先填充石头基础材质，供 Mineclonia 的 mcl_levelgen Lua 雕刻器生成 Nether 地形
-				if (y >= -29000 && y <= -28000) {
-					vm->m_data[vi] = n_stone;
-					continue;
-				}
-
-				// 【末地维度区间】Y in [-27000, -26000]
-				// 预先填充石头基础材质，供 Mineclonia 生成末地岛屿
-				if (y >= -27000 && y <= -26000) {
-					vm->m_data[vi] = n_stone;
-					continue;
-				}
-
-				// 【其它虚空隔离层】保持空气
+				// 【完全放行下界与末地】Y < overworld_y_min (-64)
+				// C++ 侧不填充任何石头或水，100% 留空给 Mineclonia / mcl_levelgen 的 Lua 脚本全权接管
 				if (y < overworld_y_min) {
-					vm->m_data[vi] = n_air;
 					continue;
 				}
 
-				// 【高空层 1】SkyGrid 层 (Y >= skygrid_y_min)
+				// 【层 3：高空顶层】SkyGrid 层 (Y >= skygrid_y_min 1200)
 				if (y >= skygrid_y_min) {
 					if ((x % grid_spacing == 0) && (y % grid_spacing == 0) && (z % grid_spacing == 0)) {
 						u32 rand_val = getBlockSeed2(v3s16(x, y, z), seed);
@@ -302,7 +291,7 @@ s16 MapgenLayered::generateTerrain()
 					continue;
 				}
 
-				// 【高空层 2】ARG 密集网状层 (arg_y_min <= Y < skygrid_y_min)
+				// 【层 2：云端中层】ARG 有机网状根系层 (arg_y_min 200 <= Y < skygrid_y_min 1200)
 				if (y >= arg_y_min) {
 					float w1 = noise_web1->result[index];
 					float w2 = noise_web2->result[index];
@@ -322,7 +311,7 @@ s16 MapgenLayered::generateTerrain()
 					continue;
 				}
 
-				// 【主世界层】Farlands 洞穴走廊与阶梯栈道层 (overworld_y_min <= Y < arg_y_min)
+				// 【层 1：主世界基层】Farlands 大峡谷长廊与悬崖栈道层 (overworld_y_min -64 <= Y < arg_y_min 200)
 				s16 mod_y_far = mymod(y, 8);
 				float terrace_boost = (mod_y_far < 2) ? 0.25f : 0.0f;
 
