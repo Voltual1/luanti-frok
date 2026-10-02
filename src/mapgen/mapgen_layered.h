@@ -13,13 +13,20 @@
 
 struct MapgenLayeredParams : public MapgenParams
 {
-	s16 skygrid_y_min = 2000;
-	s16 arg_y_min = 500;
-	s16 overworld_y_min = -64;
-	s16 grid_spacing = 4;
+	s16 overworld_y_min  = -64;
+	s16 arg_y_min        = 300;
+	s16 backrooms_y_min  = 1000;
+	s16 glitch_y_min     = 1800;
+	s16 skygrid_y_min    = 3000;
+	s16 grid_spacing     = 4;
 
-	float web_thickness = 0.42f;
+	float web_thickness      = 0.42f;
 	float web_thickness_fine = 0.32f;
+
+	s16 corridor_width = 24;
+	s16 wall_thickness = 10;
+	s16 shelf_spacing  = 16;
+	s16 shelf_height   = 3;
 
 	float cave_width = 0.09f;
 	s16 large_cave_depth = -33;
@@ -41,6 +48,9 @@ struct MapgenLayeredParams : public MapgenParams
 	NoiseParams np_web2;
 	NoiseParams np_web3;
 	NoiseParams np_web4;
+	NoiseParams np_wall_noise;
+	NoiseParams np_shelf_noise;
+	NoiseParams np_glitch_terrain_base;
 	NoiseParams np_filler_depth;
 	NoiseParams np_cave1;
 	NoiseParams np_cave2;
@@ -68,13 +78,20 @@ public:
 	s16 generateTerrain();
 
 private:
-	s16 skygrid_y_min;
-	s16 arg_y_min;
 	s16 overworld_y_min;
+	s16 arg_y_min;
+	s16 backrooms_y_min;
+	s16 glitch_y_min;
+	s16 skygrid_y_min;
 	s16 grid_spacing;
 
 	float web_thickness;
 	float web_thickness_fine;
+
+	s16 corridor_width;
+	s16 wall_thickness;
+	s16 shelf_spacing;
+	s16 shelf_height;
 
 	Noise *noise_far1 = nullptr;
 	Noise *noise_far2 = nullptr;
@@ -84,6 +101,11 @@ private:
 	Noise *noise_web2 = nullptr;
 	Noise *noise_web3 = nullptr;
 	Noise *noise_web4 = nullptr;
+
+	Noise *noise_wall_noise = nullptr;
+	Noise *noise_shelf_noise = nullptr;
+
+	NoiseParams np_glitch_terrain_base;
 
 	std::vector<content_t> m_possible_contents;
 	void initPossibleContents();

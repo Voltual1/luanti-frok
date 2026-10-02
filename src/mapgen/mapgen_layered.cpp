@@ -34,12 +34,19 @@ MapgenLayered::MapgenLayered(MapgenLayeredParams *params, EmergeParams *emerge)
 	: MapgenBasic(MAPGEN_LAYERED, params, emerge)
 {
 	spflags            = params->spflags;
-	skygrid_y_min      = params->skygrid_y_min;
-	arg_y_min          = params->arg_y_min;
 	overworld_y_min    = params->overworld_y_min;
+	arg_y_min          = params->arg_y_min;
+	backrooms_y_min    = params->backrooms_y_min;
+	glitch_y_min       = params->glitch_y_min;
+	skygrid_y_min      = params->skygrid_y_min;
 	grid_spacing       = params->grid_spacing;
 	web_thickness      = params->web_thickness;
 	web_thickness_fine = params->web_thickness_fine;
+
+	corridor_width     = params->corridor_width;
+	wall_thickness     = params->wall_thickness;
+	shelf_spacing      = params->shelf_spacing;
+	shelf_height       = params->shelf_height;
 
 	cave_width         = params->cave_width;
 	large_cave_depth   = params->large_cave_depth;
@@ -65,6 +72,11 @@ MapgenLayered::MapgenLayered(MapgenLayeredParams *params, EmergeParams *emerge)
 	noise_web3 = new Noise(&params->np_web3, seed + 505, csize.X, csize.Y + 2, csize.Z);
 	noise_web4 = new Noise(&params->np_web4, seed + 606, csize.X, csize.Y + 2, csize.Z);
 
+	noise_wall_noise  = new Noise(&params->np_wall_noise, seed + 707, csize.X, csize.Z);
+	noise_shelf_noise = new Noise(&params->np_shelf_noise, seed + 808, csize.X, csize.Y + 2, csize.Z);
+
+	np_glitch_terrain_base = params->np_glitch_terrain_base;
+
 	MapgenBasic::np_cave1    = params->np_cave1;
 	MapgenBasic::np_cave2    = params->np_cave2;
 	MapgenBasic::np_cavern   = params->np_cavern;
@@ -81,63 +93,80 @@ MapgenLayered::~MapgenLayered()
 	delete noise_web2;
 	delete noise_web3;
 	delete noise_web4;
+	delete noise_wall_noise;
+	delete noise_shelf_noise;
 }
 
 MapgenLayeredParams::MapgenLayeredParams() :
-	np_far1         (0.0, 30.0, v3f(120.0, 80.0, 120.0), 82341, 4, 0.55, 2.0),
-	np_far2         (0.0, 20.0, v3f(60.0,  40.0, 60.0),  95039, 3, 0.50, 2.0),
-	np_far_select   (0.0, 1.0,  v3f(200.0, 200.0, 200.0), 4213,  3, 0.5, 2.0),
-	np_web1         (0.0, 1.0,  v3f(42.0, 42.0, 42.0),   983240, 4, 0.55, 2.0),
-	np_web2         (0.0, 1.0,  v3f(42.0, 42.0, 42.0),   432109, 4, 0.55, 2.0),
-	np_web3         (0.0, 1.0,  v3f(20.0, 20.0, 20.0),   876543, 3, 0.50, 2.0),
-	np_web4         (0.0, 1.0,  v3f(20.0, 20.0, 20.0),   123456, 3, 0.50, 2.0),
-	np_filler_depth (0.0, 1.2,  v3f(150.0, 150.0, 150.0), 261,   3, 0.7,  2.0),
-	np_cave1        (0.0, 12.0, v3f(61.0, 61.0, 61.0),   52534,  3, 0.5,  2.0),
-	np_cave2        (0.0, 12.0, v3f(67.0, 67.0, 67.0),   10325,  3, 0.5,  2.0),
-	np_cavern       (0.0, 1.0,  v3f(384.0, 128.0, 384.0), 723,   5, 0.63, 2.0),
-	np_dungeons     (0.9, 0.5,  v3f(500.0, 500.0, 500.0), 0,     2, 0.8,  2.0)
+	np_far1                (0.0, 30.0, v3f(120.0, 80.0, 120.0), 82341, 4, 0.55, 2.0),
+	np_far2                (0.0, 20.0, v3f(60.0,  40.0, 60.0),  95039, 3, 0.50, 2.0),
+	np_far_select          (0.0, 1.0,  v3f(200.0, 200.0, 200.0), 4213,  3, 0.5, 2.0),
+	np_web1                (0.0, 1.0,  v3f(42.0, 42.0, 42.0),   983240, 4, 0.55, 2.0),
+	np_web2                (0.0, 1.0,  v3f(42.0, 42.0, 42.0),   432109, 4, 0.55, 2.0),
+	np_web3                (0.0, 1.0,  v3f(20.0, 20.0, 20.0),   876543, 3, 0.50, 2.0),
+	np_web4                (0.0, 1.0,  v3f(20.0, 20.0, 20.0),   123456, 3, 0.50, 2.0),
+	np_wall_noise          (0.0, 1.0,  v3f(120.0, 120.0, 120.0), 82341, 3, 0.5, 2.0),
+	np_shelf_noise         (0.0, 1.0,  v3f(30.0,  30.0,  30.0),  95039, 3, 0.5, 2.0),
+	np_glitch_terrain_base (4.0, 35.0, v3f(250.0, 250.0, 250.0), 82341, 5, 0.6, 2.0),
+	np_filler_depth        (0.0, 1.2,  v3f(150.0, 150.0, 150.0), 261,   3, 0.7, 2.0),
+	np_cave1               (0.0, 12.0, v3f(61.0, 61.0, 61.0),   52534,  3, 0.5, 2.0),
+	np_cave2               (0.0, 12.0, v3f(67.0, 67.0, 67.0),   10325,  3, 0.5, 2.0),
+	np_cavern              (0.0, 1.0,  v3f(384.0, 128.0, 384.0), 723,   5, 0.63, 2.0),
+	np_dungeons            (0.9, 0.5,  v3f(500.0, 500.0, 500.0), 0,     2, 0.8, 2.0)
 {
-	skygrid_y_min   = 1200;
-	arg_y_min       = 200;
 	overworld_y_min = -64;
+	arg_y_min       = 300;
+	backrooms_y_min = 1000;
+	glitch_y_min    = 1800;
+	skygrid_y_min   = 3000;
 }
 
 void MapgenLayeredParams::readParams(const Settings *settings)
 {
-	settings->getS16NoEx("mglayered_skygrid_y_min",   skygrid_y_min);
-	settings->getS16NoEx("mglayered_arg_y_min",       arg_y_min);
 	settings->getS16NoEx("mglayered_overworld_y_min", overworld_y_min);
+	settings->getS16NoEx("mglayered_arg_y_min",       arg_y_min);
+	settings->getS16NoEx("mglayered_backrooms_y_min", backrooms_y_min);
+	settings->getS16NoEx("mglayered_glitch_y_min",    glitch_y_min);
+	settings->getS16NoEx("mglayered_skygrid_y_min",   skygrid_y_min);
 	settings->getS16NoEx("mglayered_grid_spacing",   grid_spacing);
 	settings->getFloatNoEx("mglayered_web_thickness",      web_thickness);
 	settings->getFloatNoEx("mglayered_web_thickness_fine", web_thickness_fine);
 
-	settings->getNoiseParams("mglayered_np_far1",         np_far1);
-	settings->getNoiseParams("mglayered_np_far2",         np_far2);
-	settings->getNoiseParams("mglayered_np_far_select",   np_far_select);
-	settings->getNoiseParams("mglayered_np_web1",         np_web1);
-	settings->getNoiseParams("mglayered_np_web2",         np_web2);
-	settings->getNoiseParams("mglayered_np_web3",         np_web3);
-	settings->getNoiseParams("mglayered_np_web4",         np_web4);
-	settings->getNoiseParams("mglayered_np_filler_depth", np_filler_depth);
+	settings->getNoiseParams("mglayered_np_far1",                 np_far1);
+	settings->getNoiseParams("mglayered_np_far2",                 np_far2);
+	settings->getNoiseParams("mglayered_np_far_select",           np_far_select);
+	settings->getNoiseParams("mglayered_np_web1",                 np_web1);
+	settings->getNoiseParams("mglayered_np_web2",                 np_web2);
+	settings->getNoiseParams("mglayered_np_web3",                 np_web3);
+	settings->getNoiseParams("mglayered_np_web4",                 np_web4);
+	settings->getNoiseParams("mglayered_np_wall_noise",           np_wall_noise);
+	settings->getNoiseParams("mglayered_np_shelf_noise",          np_shelf_noise);
+	settings->getNoiseParams("mglayered_np_glitch_terrain_base", np_glitch_terrain_base);
+	settings->getNoiseParams("mglayered_np_filler_depth",        np_filler_depth);
 }
 
 void MapgenLayeredParams::writeParams(Settings *settings) const
 {
-	settings->setS16("mglayered_skygrid_y_min",   skygrid_y_min);
-	settings->setS16("mglayered_arg_y_min",       arg_y_min);
 	settings->setS16("mglayered_overworld_y_min", overworld_y_min);
+	settings->setS16("mglayered_arg_y_min",       arg_y_min);
+	settings->setS16("mglayered_backrooms_y_min", backrooms_y_min);
+	settings->setS16("mglayered_glitch_y_min",    glitch_y_min);
+	settings->setS16("mglayered_skygrid_y_min",   skygrid_y_min);
 	settings->setS16("mglayered_grid_spacing",   grid_spacing);
 	settings->setFloat("mglayered_web_thickness",      web_thickness);
 	settings->setFloat("mglayered_web_thickness_fine", web_thickness_fine);
 
-	settings->setNoiseParams("mglayered_np_far1",         np_far1);
-	settings->setNoiseParams("mglayered_np_far2",         np_far2);
-	settings->setNoiseParams("mglayered_np_far_select",   np_far_select);
-	settings->setNoiseParams("mglayered_np_web1",         np_web1);
-	settings->setNoiseParams("mglayered_np_web2",         np_web2);
-	settings->setNoiseParams("mglayered_np_web3",         np_web3);
-	settings->setNoiseParams("mglayered_np_web4",         np_web4);
-	settings->setNoiseParams("mglayered_np_filler_depth", np_filler_depth);
+	settings->setNoiseParams("mglayered_np_far1",                 np_far1);
+	settings->setNoiseParams("mglayered_np_far2",                 np_far2);
+	settings->setNoiseParams("mglayered_np_far_select",           np_far_select);
+	settings->setNoiseParams("mglayered_np_web1",                 np_web1);
+	settings->setNoiseParams("mglayered_np_web2",                 np_web2);
+	settings->setNoiseParams("mglayered_np_web3",                 np_web3);
+	settings->setNoiseParams("mglayered_np_web4",                 np_web4);
+	settings->setNoiseParams("mglayered_np_wall_noise",           np_wall_noise);
+	settings->setNoiseParams("mglayered_np_shelf_noise",          np_shelf_noise);
+	settings->setNoiseParams("mglayered_np_glitch_terrain_base", np_glitch_terrain_base);
+	settings->setNoiseParams("mglayered_np_filler_depth",        np_filler_depth);
 }
 
 void MapgenLayeredParams::setDefaultSettings(Settings *settings)
@@ -198,7 +227,7 @@ void MapgenLayered::makeChunk(BlockMakeData *data)
 
 	updateHeightmap(node_min, node_max);
 
-	// 仅主世界及高空层才运行生物群落与装饰，下界/末地区间完全不干涉
+	// 仅主世界及高空层才运行生物群落与装饰，下界/末地区间完全放行
 	if (node_max.Y >= overworld_y_min) {
 		if (biomegen) {
 			biomegen->calcBiomeNoise(node_min);
@@ -245,8 +274,11 @@ s16 MapgenLayered::generateTerrain()
 
 	s16 stone_surface_max_y = node_min.Y;
 
-	bool need_far = (node_max.Y >= overworld_y_min && node_min.Y < arg_y_min);
-	bool need_web = (node_max.Y >= arg_y_min && node_min.Y < skygrid_y_min);
+	// 条件优化：仅当区块重叠对应层时才计算 3D 噪声Map
+	bool need_far       = (node_max.Y >= overworld_y_min && node_min.Y < arg_y_min);
+	bool need_web       = (node_max.Y >= arg_y_min && node_min.Y < backrooms_y_min);
+	bool need_backrooms = (node_max.Y >= backrooms_y_min && node_min.Y < glitch_y_min);
+	bool need_glitch    = (node_max.Y >= glitch_y_min && node_min.Y < skygrid_y_min);
 
 	if (need_far) {
 		noise_far1->noiseMap3D(node_min.X, node_min.Y - 1, node_min.Z);
@@ -261,23 +293,44 @@ s16 MapgenLayered::generateTerrain()
 		noise_web4->noiseMap3D(node_min.X, node_min.Y - 1, node_min.Z);
 	}
 
+	if (need_backrooms) {
+		noise_wall_noise->noiseMap2D(node_min.X, node_min.Z);
+		noise_shelf_noise->noiseMap3D(node_min.X, node_min.Y - 1, node_min.Z);
+	}
+
+	std::unique_ptr<Noise> noise_glitch_terrain;
+	if (need_glitch) {
+		v3s16 chunk_pos(node_min.X / csize.X, node_min.Y / csize.Y, node_min.Z / csize.Z);
+		s32 chunk_seed = (chunk_pos.X == 0 && chunk_pos.Y == 0 && chunk_pos.Z == 0) ?
+			seed : (s32)getBlockSeed2(chunk_pos, seed);
+		noise_glitch_terrain = std::make_unique<Noise>(&np_glitch_terrain_base, chunk_seed, csize.X, csize.Z);
+		noise_glitch_terrain->noiseMap2D(node_min.X, node_min.Z);
+	}
+
 	u32 index = 0;
+	s16 period = corridor_width + wall_thickness;
 	const v3s32 &em = vm->m_area.getExtent();
 
 	for (s16 z = node_min.Z; z <= node_max.Z; z++) {
+		s16 mod_z = mymod(z, period);
+		bool is_wall_z = (mod_z < wall_thickness);
+		bool is_near_wall_z = (mod_z < wall_thickness + 4 || mod_z > period - 4);
+
 		for (s16 y = node_min.Y - 1; y <= node_max.Y + 1; y++) {
 			u32 vi = vm->m_area.index(node_min.X, y, z);
+			s16 mod_y = mymod(y, shelf_spacing);
+			bool is_shelf_layer = (mod_y < shelf_height);
+
 			for (s16 x = node_min.X; x <= node_max.X; x++, vi++, index++) {
 				if (vm->m_data[vi].getContent() != CONTENT_IGNORE)
 					continue;
 
 				// 【完全放行下界与末地】Y < overworld_y_min (-64)
-				// C++ 侧不填充任何石头或水，100% 留空给 Mineclonia / mcl_levelgen 的 Lua 脚本全权接管
 				if (y < overworld_y_min) {
 					continue;
 				}
 
-				// 【层 3：高空顶层】SkyGrid 层 (Y >= skygrid_y_min 1200)
+				// 【层 5：天顶矩阵】SkyGrid 层 (Y >= skygrid_y_min 3000)
 				if (y >= skygrid_y_min) {
 					if ((x % grid_spacing == 0) && (y % grid_spacing == 0) && (z % grid_spacing == 0)) {
 						u32 rand_val = getBlockSeed2(v3s16(x, y, z), seed);
@@ -291,7 +344,52 @@ s16 MapgenLayered::generateTerrain()
 					continue;
 				}
 
-				// 【层 2：云端中层】ARG 有机网状根系层 (arg_y_min 200 <= Y < skygrid_y_min 1200)
+				// 【层 4：故障错乱】Glitch 区块种子偏移层 (glitch_y_min 1800 <= Y < skygrid_y_min 3000)
+				if (y >= glitch_y_min) {
+					u32 index2d = (z - node_min.Z) * csize.X + (x - node_min.X);
+					s16 surface_y = glitch_y_min + (s16)noise_glitch_terrain->result[index2d];
+					if (y <= surface_y) {
+						vm->m_data[vi] = n_stone;
+						if (y > stone_surface_max_y)
+							stone_surface_max_y = y;
+					} else {
+						vm->m_data[vi] = n_air;
+					}
+					continue;
+				}
+
+				// 【层 3：后室迷宫】Backrooms 正交走廊搁板层 (backrooms_y_min 1000 <= Y < glitch_y_min 1800)
+				if (y >= backrooms_y_min) {
+					s16 mod_x = mymod(x, period);
+					bool is_wall_x = (mod_x < wall_thickness);
+					bool is_near_wall_x = (mod_x < wall_thickness + 4 || mod_x > period - 4);
+
+					u32 index2d = (z - node_min.Z) * csize.X + (x - node_min.X);
+					float wall_n = noise_wall_noise->result[index2d];
+					float shelf_n = noise_shelf_noise->result[index];
+
+					bool is_solid = false;
+					if (is_wall_x || is_wall_z) {
+						if (wall_n > -0.5f)
+							is_solid = true;
+					}
+
+					if (is_shelf_layer && (is_near_wall_x || is_near_wall_z)) {
+						if (shelf_n > -0.4f)
+							is_solid = true;
+					}
+
+					if (is_solid) {
+						vm->m_data[vi] = n_stone;
+						if (y > stone_surface_max_y)
+							stone_surface_max_y = y;
+					} else {
+						vm->m_data[vi] = n_air;
+					}
+					continue;
+				}
+
+				// 【层 2：有机根系】ARG 密集网状层 (arg_y_min 300 <= Y < backrooms_y_min 1000)
 				if (y >= arg_y_min) {
 					float w1 = noise_web1->result[index];
 					float w2 = noise_web2->result[index];
@@ -311,7 +409,7 @@ s16 MapgenLayered::generateTerrain()
 					continue;
 				}
 
-				// 【层 1：主世界基层】Farlands 大峡谷长廊与悬崖栈道层 (overworld_y_min -64 <= Y < arg_y_min 200)
+				// 【层 1：主世界基层】Farlands 瑞士奶酪大峡谷与步道栈道 (overworld_y_min -64 <= Y < arg_y_min 300)
 				s16 mod_y_far = mymod(y, 8);
 				float terrace_boost = (mod_y_far < 2) ? 0.25f : 0.0f;
 
