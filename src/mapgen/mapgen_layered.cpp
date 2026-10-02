@@ -242,7 +242,6 @@ s16 MapgenLayered::generateTerrain()
 
 	s16 stone_surface_max_y = node_min.Y;
 
-	// 只有在 Overworld 及以上高度层才计算 3D 噪声，避免下界/末地出现 Overworld 水与石头
 	bool need_far = (node_max.Y >= overworld_y_min && node_min.Y < skygrid_y_min);
 	bool need_web = (node_max.Y >= arg_y_min && node_min.Y < skygrid_y_min);
 
@@ -269,8 +268,21 @@ s16 MapgenLayered::generateTerrain()
 				if (vm->m_data[vi].getContent() != CONTENT_IGNORE)
 					continue;
 
-				// 【下界 / 末地 保护层】Y < overworld_y_min (-64)
-				// 不放置任何石头与重力水，保持空气/CONTENT_AIR，放行给 Mineclonia 生成下界与末地
+				// 【下界维度区间】Y in [-29000, -28000]
+				// 预先填充石头基础材质，供 Mineclonia 的 mcl_levelgen Lua 雕刻器生成 Nether 地形
+				if (y >= -29000 && y <= -28000) {
+					vm->m_data[vi] = n_stone;
+					continue;
+				}
+
+				// 【末地维度区间】Y in [-27000, -26000]
+				// 预先填充石头基础材质，供 Mineclonia 生成末地岛屿
+				if (y >= -27000 && y <= -26000) {
+					vm->m_data[vi] = n_stone;
+					continue;
+				}
+
+				// 【其它虚空隔离层】保持空气
 				if (y < overworld_y_min) {
 					vm->m_data[vi] = n_air;
 					continue;
