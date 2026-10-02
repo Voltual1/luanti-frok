@@ -24,6 +24,12 @@
 #include "util/numeric.h"
 #include <cmath>
 
+static inline s16 mymod(s16 a, s16 b)
+{
+	s16 r = a % b;
+	return r < 0 ? r + b : r;
+}
+
 MapgenFarlands::MapgenFarlands(MapgenFarlandsParams *params, EmergeParams *emerge)
 	: MapgenBasic(MAPGEN_FARLANDS, params, emerge)
 {
@@ -62,14 +68,14 @@ MapgenFarlands::~MapgenFarlands()
 }
 
 MapgenFarlandsParams::MapgenFarlandsParams() :
-	np_far1         (0.0, 30.0, v3f(80.0, 320.0, 15.0),  82341, 4, 0.6, 2.0),
-	np_far2         (0.0, 30.0, v3f(15.0, 320.0, 80.0),  95039, 4, 0.6, 2.0),
-	np_far_select   (0.0, 1.0,  v3f(200.0, 200.0, 200.0), 4213,  3, 0.5, 2.0),
-	np_filler_depth (0.0, 1.2,  v3f(150.0, 150.0, 150.0), 261,   3, 0.7, 2.0),
-	np_cave1        (0.0, 12.0, v3f(61.0,  61.0,  61.0),  52534, 3, 0.5, 2.0),
-	np_cave2        (0.0, 12.0, v3f(67.0,  67.0,  67.0),  10325, 3, 0.5, 2.0),
+	np_far1         (0.0, 30.0, v3f(120.0, 80.0, 120.0), 82341, 4, 0.55, 2.0),
+	np_far2         (0.0, 20.0, v3f(60.0,  40.0, 60.0),  95039, 3, 0.50, 2.0),
+	np_far_select   (0.0, 1.0,  v3f(200.0, 200.0, 200.0), 4213,  3, 0.50, 2.0),
+	np_filler_depth (0.0, 1.2,  v3f(150.0, 150.0, 150.0), 261,   3, 0.7,  2.0),
+	np_cave1        (0.0, 12.0, v3f(61.0,  61.0,  61.0),  52534, 3, 0.5,  2.0),
+	np_cave2        (0.0, 12.0, v3f(67.0,  67.0,  67.0),  10325, 3, 0.5,  2.0),
 	np_cavern       (0.0, 1.0,  v3f(384.0, 128.0, 384.0), 723,   5, 0.63, 2.0),
-	np_dungeons     (0.9, 0.5,  v3f(500.0, 500.0, 500.0), 0,     2, 0.8, 2.0)
+	np_dungeons     (0.9, 0.5,  v3f(500.0, 500.0, 500.0), 0,     2, 0.8,  2.0)
 {
 }
 
@@ -134,7 +140,7 @@ int MapgenFarlands::getSpawnLevelAtPoint(v2s16 p)
 		float n2 = NoiseFractal3D(&noise_far2->np, p.X, y, p.Y, seed + 101);
 		float n_select = rangelim(NoiseFractal3D(&noise_far_select->np, p.X, y, p.Y, seed + 202), 0.0f, 1.0f);
 
-		float density = n1 + n_select * (n2 - n1) - (y - water_level) * 0.35f;
+		float density = n1 + n_select * (n2 - n1) - (y - water_level) * 0.15f;
 
 		if (density > 0.0f)
 			return y + 2;
@@ -219,6 +225,11 @@ s16 MapgenFarlands::generateTerrain()
 	for (s16 z = node_min.Z; z <= node_max.Z; z++) {
 		for (s16 y = node_min.Y - 1; y <= node_max.Y + 1; y++) {
 			u32 vi = vm->m_area.index(node_min.X, y, z);
+
+			// 每隔 8 个高度在壁面上延伸出平整栈道与阶梯
+			s16 mod_y = mymod(y, 8);
+			float terrace_boost = (mod_y < 2) ? 0.25f : 0.0f;
+
 			for (s16 x = node_min.X; x <= node_max.X; x++, vi++, index++) {
 				if (vm->m_data[vi].getContent() != CONTENT_IGNORE)
 					continue;
@@ -227,8 +238,9 @@ s16 MapgenFarlands::generateTerrain()
 				float n2       = noise_far2->result[index];
 				float n_select = rangelim(noise_far_select->result[index], 0.0f, 1.0f);
 
-				// 3D 瑞士奶酪密度场：在正交轴向上产生自然的洞穴长廊与大峡谷
-				float density  = n1 + n_select * (n2 - n1) - (y - water_level) * 0.35f;
+				// 自然 3D 山体与大峡谷长廊密度场，带有台阶栈道增益
+				float base_density = n1 + n_select * (n2 - n1) - (y - water_level) * 0.15f;
+				float density      = base_density + terrace_boost;
 
 				if (density > 0.0f) {
 					vm->m_data[vi] = n_stone;
