@@ -24,6 +24,12 @@
 #include "util/numeric.h"
 #include <cmath>
 
+static inline s16 mymod(s16 a, s16 b)
+{
+	s16 r = a % b;
+	return r < 0 ? r + b : r;
+}
+
 MapgenLayered::MapgenLayered(MapgenLayeredParams *params, EmergeParams *emerge)
 	: MapgenBasic(MAPGEN_LAYERED, params, emerge)
 {
@@ -78,9 +84,8 @@ MapgenLayered::~MapgenLayered()
 }
 
 MapgenLayeredParams::MapgenLayeredParams() :
-	np_far1 (0.0, 30.0, v3f(120.0, 80.0, 120.0), 82341, 4, 0.55, 2.0),
-np_far2 (0.0, 20.0, v3f(60.0,  40.0, 60.0),  95039, 3, 0.50, 2.0),
-
+	np_far1         (0.0, 30.0, v3f(120.0, 80.0, 120.0), 82341, 4, 0.55, 2.0),
+	np_far2         (0.0, 20.0, v3f(60.0,  40.0, 60.0),  95039, 3, 0.50, 2.0),
 	np_far_select   (0.0, 1.0,  v3f(200.0, 200.0, 200.0), 4213,  3, 0.5, 2.0),
 	np_web1         (0.0, 1.0,  v3f(42.0, 42.0, 42.0),   983240, 4, 0.55, 2.0),
 	np_web2         (0.0, 1.0,  v3f(42.0, 42.0, 42.0),   432109, 4, 0.55, 2.0),
@@ -307,24 +312,24 @@ s16 MapgenLayered::generateTerrain()
 
 				// 【主世界层】Farlands 洞穴走廊与阶梯栈道层 (overworld_y_min <= Y < arg_y_min)
 				s16 mod_y_far = mymod(y, 8);
-float terrace_boost = (mod_y_far < 2) ? 0.25f : 0.0f;
+				float terrace_boost = (mod_y_far < 2) ? 0.25f : 0.0f;
 
-float n1       = noise_far1->result[index];
-float n2       = noise_far2->result[index];
-float n_select = rangelim(noise_far_select->result[index], 0.0f, 1.0f);
+				float n1       = noise_far1->result[index];
+				float n2       = noise_far2->result[index];
+				float n_select = rangelim(noise_far_select->result[index], 0.0f, 1.0f);
 
-float base_density = n1 + n_select * (n2 - n1) - (y - water_level) * 0.15f;
-float density      = base_density + terrace_boost;
+				float base_density = n1 + n_select * (n2 - n1) - (y - water_level) * 0.15f;
+				float density      = base_density + terrace_boost;
 
-if (density > 0.0f) {
-	vm->m_data[vi] = n_stone;
-	if (y > stone_surface_max_y)
-		stone_surface_max_y = y;
-} else if (y <= water_level) {
-	vm->m_data[vi] = n_water;
-} else {
-	vm->m_data[vi] = n_air;
-}
+				if (density > 0.0f) {
+					vm->m_data[vi] = n_stone;
+					if (y > stone_surface_max_y)
+						stone_surface_max_y = y;
+				} else if (y <= water_level) {
+					vm->m_data[vi] = n_water;
+				} else {
+					vm->m_data[vi] = n_air;
+				}
 			}
 		}
 	}
