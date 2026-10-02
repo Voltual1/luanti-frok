@@ -34,11 +34,13 @@ MapgenLayered::MapgenLayered(MapgenLayeredParams *params, EmergeParams *emerge)
 	: MapgenBasic(MAPGEN_LAYERED, params, emerge)
 {
 	spflags            = params->spflags;
+	chunk_group_size   = params->chunk_group_size;
 	overworld_y_min    = params->overworld_y_min;
-	arg_y_min          = params->arg_y_min;
-	backrooms_y_min    = params->backrooms_y_min;
-	glitch_y_min       = params->glitch_y_min;
-	skygrid_y_min      = params->skygrid_y_min;
+	band1_y_max        = params->band1_y_max;
+	band2_y_max        = params->band2_y_max;
+	band3_y_max        = params->band3_y_max;
+	band4_y_max        = params->band4_y_max;
+
 	grid_spacing       = params->grid_spacing;
 	web_thickness      = params->web_thickness;
 	web_thickness_fine = params->web_thickness_fine;
@@ -108,27 +110,29 @@ MapgenLayeredParams::MapgenLayeredParams() :
 	np_wall_noise          (0.0, 1.0,  v3f(120.0, 120.0, 120.0), 82341, 3, 0.5, 2.0),
 	np_shelf_noise         (0.0, 1.0,  v3f(30.0,  30.0,  30.0),  95039, 3, 0.5, 2.0),
 	np_glitch_terrain_base (4.0, 35.0, v3f(250.0, 250.0, 250.0), 82341, 5, 0.6, 2.0),
-	np_filler_depth        (0.0, 1.2,  v3f(150.0, 150.0, 150.0), 261,   3, 0.7, 2.0),
-	np_cave1               (0.0, 12.0, v3f(61.0, 61.0, 61.0),   52534,  3, 0.5, 2.0),
-	np_cave2               (0.0, 12.0, v3f(67.0, 67.0, 67.0),   10325,  3, 0.5, 2.0),
+	np_filler_depth        (0.0, 1.2,  v3f(150.0, 150.0, 150.0), 261,   3, 0.7,  2.0),
+	np_cave1               (0.0, 12.0, v3f(61.0, 61.0, 61.0),   52534,  3, 0.5,  2.0),
+	np_cave2               (0.0, 12.0, v3f(67.0, 67.0, 67.0),   10325,  3, 0.5,  2.0),
 	np_cavern              (0.0, 1.0,  v3f(384.0, 128.0, 384.0), 723,   5, 0.63, 2.0),
-	np_dungeons            (0.9, 0.5,  v3f(500.0, 500.0, 500.0), 0,     2, 0.8, 2.0)
+	np_dungeons            (0.9, 0.5,  v3f(500.0, 500.0, 500.0), 0,     2, 0.8,  2.0)
 {
-	overworld_y_min = -64;
-	arg_y_min       = 300;
-	backrooms_y_min = 1000;
-	glitch_y_min    = 1800;
-	skygrid_y_min   = 3000;
+	chunk_group_size = 4;
+	overworld_y_min  = -64;
+	band1_y_max      = 300;
+	band2_y_max      = 1000;
+	band3_y_max      = 1800;
+	band4_y_max      = 3000;
 }
 
 void MapgenLayeredParams::readParams(const Settings *settings)
 {
-	settings->getS16NoEx("mglayered_overworld_y_min", overworld_y_min);
-	settings->getS16NoEx("mglayered_arg_y_min",       arg_y_min);
-	settings->getS16NoEx("mglayered_backrooms_y_min", backrooms_y_min);
-	settings->getS16NoEx("mglayered_glitch_y_min",    glitch_y_min);
-	settings->getS16NoEx("mglayered_skygrid_y_min",   skygrid_y_min);
-	settings->getS16NoEx("mglayered_grid_spacing",   grid_spacing);
+	settings->getS16NoEx("mglayered_chunk_group_size", chunk_group_size);
+	settings->getS16NoEx("mglayered_overworld_y_min",  overworld_y_min);
+	settings->getS16NoEx("mglayered_band1_y_max",      band1_y_max);
+	settings->getS16NoEx("mglayered_band2_y_max",      band2_y_max);
+	settings->getS16NoEx("mglayered_band3_y_max",      band3_y_max);
+	settings->getS16NoEx("mglayered_band4_y_max",      band4_y_max);
+	settings->getS16NoEx("mglayered_grid_spacing",      grid_spacing);
 	settings->getFloatNoEx("mglayered_web_thickness",      web_thickness);
 	settings->getFloatNoEx("mglayered_web_thickness_fine", web_thickness_fine);
 
@@ -147,12 +151,13 @@ void MapgenLayeredParams::readParams(const Settings *settings)
 
 void MapgenLayeredParams::writeParams(Settings *settings) const
 {
-	settings->setS16("mglayered_overworld_y_min", overworld_y_min);
-	settings->setS16("mglayered_arg_y_min",       arg_y_min);
-	settings->setS16("mglayered_backrooms_y_min", backrooms_y_min);
-	settings->setS16("mglayered_glitch_y_min",    glitch_y_min);
-	settings->setS16("mglayered_skygrid_y_min",   skygrid_y_min);
-	settings->setS16("mglayered_grid_spacing",   grid_spacing);
+	settings->setS16("mglayered_chunk_group_size", chunk_group_size);
+	settings->setS16("mglayered_overworld_y_min",  overworld_y_min);
+	settings->setS16("mglayered_band1_y_max",      band1_y_max);
+	settings->setS16("mglayered_band2_y_max",      band2_y_max);
+	settings->setS16("mglayered_band3_y_max",      band3_y_max);
+	settings->setS16("mglayered_band4_y_max",      band4_y_max);
+	settings->setS16("mglayered_grid_spacing",      grid_spacing);
 	settings->setFloat("mglayered_web_thickness",      web_thickness);
 	settings->setFloat("mglayered_web_thickness_fine", web_thickness_fine);
 
@@ -201,6 +206,18 @@ void MapgenLayered::initPossibleContents()
 int MapgenLayered::getSpawnLevelAtPoint(v2s16 p)
 {
 	return 10;
+}
+
+void MapgenLayered::getGroupLayerOrder(s32 group_hash, LayerType layers_out[LAYER_COUNT])
+{
+	for (int i = 0; i < LAYER_COUNT; i++)
+		layers_out[i] = (LayerType)i;
+
+	PcgRandom pr(group_hash);
+	for (int i = LAYER_COUNT - 1; i > 0; i--) {
+		int j = pr.range(0, i);
+		std::swap(layers_out[i], layers_out[j]);
+	}
 }
 
 void MapgenLayered::makeChunk(BlockMakeData *data)
@@ -274,33 +291,61 @@ s16 MapgenLayered::generateTerrain()
 
 	s16 stone_surface_max_y = node_min.Y;
 
-	// 条件优化：仅当区块重叠对应层时才计算 3D 噪声Map
-	bool need_far       = (node_max.Y >= overworld_y_min && node_min.Y < arg_y_min);
-	bool need_web       = (node_max.Y >= arg_y_min && node_min.Y < backrooms_y_min);
-	bool need_backrooms = (node_max.Y >= backrooms_y_min && node_min.Y < glitch_y_min);
-	bool need_glitch    = (node_max.Y >= glitch_y_min && node_min.Y < skygrid_y_min);
+	// 计算当前地图区块归属的 2D 区块组 (Chunk Group)
+	s16 chunk_x = std::floor((float)node_min.X / csize.X);
+	s16 chunk_z = std::floor((float)node_min.Z / csize.Z);
+	s16 group_x = std::floor((float)chunk_x / chunk_group_size);
+	s16 group_z = std::floor((float)chunk_z / chunk_group_size);
 
-	if (need_far) {
+	s32 group_hash = (s32)getBlockSeed2(v3s16(group_x, 0, group_z), seed);
+
+	// 针对当前区块组随机洗牌 5 层千层饼的垂直堆叠顺序
+	LayerType layer_order[LAYER_COUNT];
+	getGroupLayerOrder(group_hash, layer_order);
+
+	// 检查当前 Chunk 中参与的图层类型，只计算必要的 Noise
+	bool has_farlands  = false;
+	bool has_arg       = false;
+	bool has_backrooms = false;
+	bool has_glitch    = false;
+
+	if (node_max.Y >= overworld_y_min) {
+		for (s16 y = node_min.Y; y <= node_max.Y; y += MAP_BLOCKSIZE) {
+			LayerType ly;
+			if (y < band1_y_max)       ly = layer_order[0];
+			else if (y < band2_y_max) ly = layer_order[1];
+			else if (y < band3_y_max) ly = layer_order[2];
+			else if (y < band4_y_max) ly = layer_order[3];
+			else                      ly = layer_order[4];
+
+			if (ly == LAYER_FARLANDS)  has_farlands = true;
+			if (ly == LAYER_ARG)       has_arg = true;
+			if (ly == LAYER_BACKROOMS) has_backrooms = true;
+			if (ly == LAYER_GLITCH)    has_glitch = true;
+		}
+	}
+
+	if (has_farlands) {
 		noise_far1->noiseMap3D(node_min.X, node_min.Y - 1, node_min.Z);
 		noise_far2->noiseMap3D(node_min.X, node_min.Y - 1, node_min.Z);
 		noise_far_select->noiseMap3D(node_min.X, node_min.Y - 1, node_min.Z);
 	}
 
-	if (need_web) {
+	if (has_arg) {
 		noise_web1->noiseMap3D(node_min.X, node_min.Y - 1, node_min.Z);
 		noise_web2->noiseMap3D(node_min.X, node_min.Y - 1, node_min.Z);
 		noise_web3->noiseMap3D(node_min.X, node_min.Y - 1, node_min.Z);
 		noise_web4->noiseMap3D(node_min.X, node_min.Y - 1, node_min.Z);
 	}
 
-	if (need_backrooms) {
+	if (has_backrooms) {
 		noise_wall_noise->noiseMap2D(node_min.X, node_min.Z);
 		noise_shelf_noise->noiseMap3D(node_min.X, node_min.Y - 1, node_min.Z);
 	}
 
 	std::unique_ptr<Noise> noise_glitch_terrain;
-	if (need_glitch) {
-		v3s16 chunk_pos(node_min.X / csize.X, node_min.Y / csize.Y, node_min.Z / csize.Z);
+	if (has_glitch) {
+		v3s16 chunk_pos(chunk_x, node_min.Y / csize.Y, chunk_z);
 		s32 chunk_seed = (chunk_pos.X == 0 && chunk_pos.Y == 0 && chunk_pos.Z == 0) ?
 			seed : (s32)getBlockSeed2(chunk_pos, seed);
 		noise_glitch_terrain = std::make_unique<Noise>(&np_glitch_terrain_base, chunk_seed, csize.X, csize.Z);
@@ -318,6 +363,20 @@ s16 MapgenLayered::generateTerrain()
 
 		for (s16 y = node_min.Y - 1; y <= node_max.Y + 1; y++) {
 			u32 vi = vm->m_area.index(node_min.X, y, z);
+
+			// 【完全放行下界与末地】Y < overworld_y_min (-64)
+			if (y < overworld_y_min) {
+				continue;
+			}
+
+			// 确定当前高度 $Y$ 对应当前区块组洗牌后的奇观图层类型
+			LayerType cur_layer;
+			if (y < band1_y_max)       cur_layer = layer_order[0];
+			else if (y < band2_y_max) cur_layer = layer_order[1];
+			else if (y < band3_y_max) cur_layer = layer_order[2];
+			else if (y < band4_y_max) cur_layer = layer_order[3];
+			else                      cur_layer = layer_order[4];
+
 			s16 mod_y = mymod(y, shelf_spacing);
 			bool is_shelf_layer = (mod_y < shelf_height);
 
@@ -325,13 +384,8 @@ s16 MapgenLayered::generateTerrain()
 				if (vm->m_data[vi].getContent() != CONTENT_IGNORE)
 					continue;
 
-				// 【完全放行下界与末地】Y < overworld_y_min (-64)
-				if (y < overworld_y_min) {
-					continue;
-				}
-
-				// 【层 5：天顶矩阵】SkyGrid 层 (Y >= skygrid_y_min 3000)
-				if (y >= skygrid_y_min) {
+				switch (cur_layer) {
+				case LAYER_SKYGRID: {
 					if ((x % grid_spacing == 0) && (y % grid_spacing == 0) && (z % grid_spacing == 0)) {
 						u32 rand_val = getBlockSeed2(v3s16(x, y, z), seed);
 						content_t selected_c = m_possible_contents[rand_val % m_possible_contents.size()];
@@ -341,13 +395,12 @@ s16 MapgenLayered::generateTerrain()
 					} else {
 						vm->m_data[vi] = n_air;
 					}
-					continue;
+					break;
 				}
 
-				// 【层 4：故障错乱】Glitch 区块种子偏移层 (glitch_y_min 1800 <= Y < skygrid_y_min 3000)
-				if (y >= glitch_y_min) {
+				case LAYER_GLITCH: {
 					u32 index2d = (z - node_min.Z) * csize.X + (x - node_min.X);
-					s16 surface_y = glitch_y_min + (s16)noise_glitch_terrain->result[index2d];
+					s16 surface_y = (s16)noise_glitch_terrain->result[index2d];
 					if (y <= surface_y) {
 						vm->m_data[vi] = n_stone;
 						if (y > stone_surface_max_y)
@@ -355,11 +408,10 @@ s16 MapgenLayered::generateTerrain()
 					} else {
 						vm->m_data[vi] = n_air;
 					}
-					continue;
+					break;
 				}
 
-				// 【层 3：后室迷宫】Backrooms 正交走廊搁板层 (backrooms_y_min 1000 <= Y < glitch_y_min 1800)
-				if (y >= backrooms_y_min) {
+				case LAYER_BACKROOMS: {
 					s16 mod_x = mymod(x, period);
 					bool is_wall_x = (mod_x < wall_thickness);
 					bool is_near_wall_x = (mod_x < wall_thickness + 4 || mod_x > period - 4);
@@ -386,11 +438,10 @@ s16 MapgenLayered::generateTerrain()
 					} else {
 						vm->m_data[vi] = n_air;
 					}
-					continue;
+					break;
 				}
 
-				// 【层 2：有机根系】ARG 密集网状层 (arg_y_min 300 <= Y < backrooms_y_min 1000)
-				if (y >= arg_y_min) {
+				case LAYER_ARG: {
 					float w1 = noise_web1->result[index];
 					float w2 = noise_web2->result[index];
 					float dist_main = std::sqrt(w1 * w1 + w2 * w2);
@@ -406,28 +457,32 @@ s16 MapgenLayered::generateTerrain()
 					} else {
 						vm->m_data[vi] = n_air;
 					}
-					continue;
+					break;
 				}
 
-				// 【层 1：主世界基层】Farlands 瑞士奶酪大峡谷与步道栈道 (overworld_y_min -64 <= Y < arg_y_min 300)
-				s16 mod_y_far = mymod(y, 8);
-				float terrace_boost = (mod_y_far < 2) ? 0.25f : 0.0f;
+				case LAYER_FARLANDS:
+				default: {
+					s16 mod_y_far = mymod(y, 8);
+					float terrace_boost = (mod_y_far < 2) ? 0.25f : 0.0f;
 
-				float n1       = noise_far1->result[index];
-				float n2       = noise_far2->result[index];
-				float n_select = rangelim(noise_far_select->result[index], 0.0f, 1.0f);
+					float n1       = noise_far1->result[index];
+					float n2       = noise_far2->result[index];
+					float n_select = rangelim(noise_far_select->result[index], 0.0f, 1.0f);
 
-				float base_density = n1 + n_select * (n2 - n1) - (y - water_level) * 0.15f;
-				float density      = base_density + terrace_boost;
+					float base_density = n1 + n_select * (n2 - n1) - (y - water_level) * 0.15f;
+					float density      = base_density + terrace_boost;
 
-				if (density > 0.0f) {
-					vm->m_data[vi] = n_stone;
-					if (y > stone_surface_max_y)
-						stone_surface_max_y = y;
-				} else if (y <= water_level) {
-					vm->m_data[vi] = n_water;
-				} else {
-					vm->m_data[vi] = n_air;
+					if (density > 0.0f) {
+						vm->m_data[vi] = n_stone;
+						if (y > stone_surface_max_y)
+							stone_surface_max_y = y;
+					} else if (y <= water_level) {
+						vm->m_data[vi] = n_water;
+					} else {
+						vm->m_data[vi] = n_air;
+					}
+					break;
+				}
 				}
 			}
 		}

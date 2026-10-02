@@ -11,14 +11,25 @@
 
 #include "mapgen.h"
 
+enum LayerType {
+	LAYER_FARLANDS,
+	LAYER_ARG,
+	LAYER_BACKROOMS,
+	LAYER_GLITCH,
+	LAYER_SKYGRID,
+	LAYER_COUNT
+};
+
 struct MapgenLayeredParams : public MapgenParams
 {
+	s16 chunk_group_size = 4;
 	s16 overworld_y_min  = -64;
-	s16 arg_y_min        = 300;
-	s16 backrooms_y_min  = 1000;
-	s16 glitch_y_min     = 1800;
-	s16 skygrid_y_min    = 3000;
-	s16 grid_spacing     = 4;
+	s16 band1_y_max      = 300;
+	s16 band2_y_max      = 1000;
+	s16 band3_y_max      = 1800;
+	s16 band4_y_max      = 3000;
+
+	s16 grid_spacing = 4;
 
 	float web_thickness      = 0.42f;
 	float web_thickness_fine = 0.32f;
@@ -78,13 +89,14 @@ public:
 	s16 generateTerrain();
 
 private:
+	s16 chunk_group_size;
 	s16 overworld_y_min;
-	s16 arg_y_min;
-	s16 backrooms_y_min;
-	s16 glitch_y_min;
-	s16 skygrid_y_min;
-	s16 grid_spacing;
+	s16 band1_y_max;
+	s16 band2_y_max;
+	s16 band3_y_max;
+	s16 band4_y_max;
 
+	s16 grid_spacing;
 	float web_thickness;
 	float web_thickness_fine;
 
@@ -109,4 +121,5 @@ private:
 
 	std::vector<content_t> m_possible_contents;
 	void initPossibleContents();
+	void getGroupLayerOrder(s32 group_hash, LayerType layers_out[LAYER_COUNT]);
 };
