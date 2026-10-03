@@ -41,7 +41,7 @@ android {
 		packagingOptions {
 		resources {
 			excludes += [
-					'META-INF/DEPENDENCIES'
+					'/META-INF/DEPENDENCIES'
 			]
 		}
 	}
