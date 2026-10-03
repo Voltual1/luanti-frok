@@ -1,0 +1,6 @@
+Faithful 32x (Unofficial Luanti Port)
+Texture pack for MineClone 2 / Luanti. 
+Based on the original Faithful Resource Pack (faithfulpack.net).
+Converted & fixed by Voltual.
+Size: 32x32. Non-commercial use only.
+https://gitee.com/Voltula/unofficial-faithful32x-luanti
