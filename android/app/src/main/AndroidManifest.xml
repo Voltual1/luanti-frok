@@ -76,7 +76,7 @@
 		</provider>
 
 		<provider
-            android:name=".LuantiDocumentsProvider"
+            android:name="me.voltual.nb.LuantiDocumentsProvider"
             android:authorities="me.voltual.nb.documents"
             android:exported="true"
             android:grantUriPermissions="true"
