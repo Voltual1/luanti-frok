@@ -143,11 +143,18 @@ clean {
 	delete file("src/main/assets/assets.zip")
 }
 
+configurations.all {
+    resolutionStrategy {
+        force 'androidx.annotation:annotation-jvm:1.8.2'
+        force 'androidx.annotation:annotation:1.8.2'
+    }
+}
+
 dependencies {
 	implementation project(':native')
 	implementation 'androidx.appcompat:appcompat:1.6.1'
 	implementation 'org.apache.ftpserver:ftpserver-core:1.2.1'
 	implementation 'org.apache.ftpserver:ftplet-api:1.2.1'
 	implementation 'org.apache.mina:mina-core:2.2.5'
-	implementation 'com.google.crypto.tink:tink-android:1.20.0'
+	implementation 'com.google.crypto.tink:tink:1.20.0'
 }
