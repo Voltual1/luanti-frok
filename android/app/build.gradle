@@ -63,7 +63,7 @@ android {
 		sourceCompatibility JavaVersion.VERSION_1_8
 		targetCompatibility JavaVersion.VERSION_1_8
 	}
-	namespace 'me.voltual.nb'
+	namespace 'net.minetest.minetest'
 }
 
 // Register one task for each locale file
