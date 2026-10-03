@@ -1,4 +1,4 @@
-package me.voltual.nb;
+package net.minetest.minetest;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -16,8 +16,8 @@ import androidx.core.app.NotificationCompat;
 
 public class FtpService extends Service {
 	private static final String TAG = "FtpService";
-	public static final String ACTION_START = "me.voltual.nb.FTP_START";
-	public static final String ACTION_STOP = "me.voltual.nb.FTP_STOP";
+	public static final String ACTION_START = "net.minetest.minetest.FTP_START";
+	public static final String ACTION_STOP = "net.minetest.minetest.FTP_STOP";
 	public static final int NOTIFICATION_ID_FTP = 1001;
 
 	@Override

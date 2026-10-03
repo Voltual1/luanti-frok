@@ -17,7 +17,7 @@ You should have received a copy of the GNU Lesser General Public License along
 with this program; if not, see <https://www.gnu.org/licenses/>.
 */
 
-package me.voltual.nb;
+package net.minetest.minetest;
 
 import org.libsdl.app.SDLActivity;
 
@@ -290,8 +290,7 @@ public class GameActivity extends SDLActivity {
 		}
 
 		Intent notificationIntent = new Intent(this, GameActivity.class);
-		notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
-			| Intent.FLAG_ACTIVITY_SINGLE_TOP);
+		notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 		int pendingIntentFlag = 0;
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
 			pendingIntentFlag = PendingIntent.FLAG_MUTABLE;
@@ -327,7 +326,6 @@ public class GameActivity extends SDLActivity {
 
 		mNotifyManager.notify(MainActivity.NOTIFICATION_ID_GAME, builder.build());
 	}
-
 
 	public void setPlayingNowNotification(boolean show) {
 		gameNotificationShown = show;

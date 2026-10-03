@@ -1,4 +1,4 @@
-package me.voltual.nb;
+package net.minetest.minetest;
 
 import android.content.Intent;
 import android.os.Build;
