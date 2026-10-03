@@ -3,9 +3,12 @@ package net.minetest.minetest;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.method.HideReturnsTransformationMethod;
+import android.text.method.PasswordTransformationMethod;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -21,11 +24,13 @@ public class FtpActivity extends AppCompatActivity {
 	private EditText etPort;
 	private EditText etUsername;
 	private EditText etPassword;
+	private ImageButton btnTogglePassword;
 	private TextView tvStatus;
 	private TextView tvIpAddress;
 	private Button btnToggle;
 
 	private FtpSettingsStore settingsStore;
+	private boolean isPasswordVisible = false;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +48,7 @@ public class FtpActivity extends AppCompatActivity {
 		etPort = findViewById(R.id.et_port);
 		etUsername = findViewById(R.id.et_username);
 		etPassword = findViewById(R.id.et_password);
+		btnTogglePassword = findViewById(R.id.btn_toggle_password);
 		tvStatus = findViewById(R.id.tv_status);
 		tvIpAddress = findViewById(R.id.tv_ip_address);
 		btnToggle = findViewById(R.id.btn_toggle);
@@ -51,9 +57,22 @@ public class FtpActivity extends AppCompatActivity {
 		etUsername.setText(settingsStore.getUsername());
 		etPassword.setText(settingsStore.getPassword());
 
+		btnTogglePassword.setOnClickListener(v -> togglePasswordVisibility());
 		btnToggle.setOnClickListener(v -> toggleFtpServer());
 
 		updateUiState();
+	}
+
+	private void togglePasswordVisibility() {
+		isPasswordVisible = !isPasswordVisible;
+		if (isPasswordVisible) {
+			etPassword.setTransformationMethod(HideReturnsTransformationMethod.getInstance());
+			btnTogglePassword.setImageResource(R.drawable.ic_eye);
+		} else {
+			etPassword.setTransformationMethod(PasswordTransformationMethod.getInstance());
+			btnTogglePassword.setImageResource(R.drawable.ic_eye_off);
+		}
+		etPassword.setSelection(etPassword.getText().length());
 	}
 
 	@Override
