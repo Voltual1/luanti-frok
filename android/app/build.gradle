@@ -61,10 +61,6 @@ android {
 		}
 	}
 
-	compileOptions {
-		sourceCompatibility JavaVersion.VERSION_1_8
-		targetCompatibility JavaVersion.VERSION_1_8
-	}
 	namespace 'net.minetest.minetest'
 }
 
@@ -165,7 +161,7 @@ configurations.all {
 
 dependencies {
 	implementation project(':native')
-	implementation 'androidx.appcompat:appcompat:1.6.1'
+	implementation 'androidx.appcompat:appcompat:1.7.1'
 	implementation 'org.apache.ftpserver:ftpserver-core:1.2.1'
 	implementation 'org.apache.ftpserver:ftplet-api:1.2.1'
 	implementation 'org.apache.mina:mina-core:2.2.5'
