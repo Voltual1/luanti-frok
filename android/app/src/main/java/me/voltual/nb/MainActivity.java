@@ -136,6 +136,15 @@ public class MainActivity extends AppCompatActivity {
 	private void startNative() {
 		Log.i("MainActivity", "starting native code");
 		sharedPreferences.edit().putInt(TAG_VERSION_CODE, versionCode).apply();
+
+		Intent ftpIntent = new Intent(this, FtpService.class);
+		ftpIntent.setAction(FtpService.ACTION_START);
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+			startForegroundService(ftpIntent);
+		} else {
+			startService(ftpIntent);
+		}
+
 		Intent intent = new Intent(this, GameActivity.class);
 		intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_CLEAR_TASK);
 		startActivity(intent);
