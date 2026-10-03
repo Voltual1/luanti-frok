@@ -91,6 +91,10 @@ tasks.register("prepareAssets") {
 		copy {
 			from "${projRoot}/minetest.conf.example", "${projRoot}/README.md" into assetsFolder
 		}
+		// add：minetest.conf
+		copy {
+			from "${projRoot}/minetest.conf" into assetsFolder
+		}
 		copy {
 			from "${projRoot}/doc/lgpl-2.1.txt" into assetsFolder
 		}
@@ -108,6 +112,14 @@ tasks.register("prepareAssets") {
 		}
 		copy {
 			from "${projRoot}/textures/base/pack" into "${assetsFolder}/textures/base/pack"
+		}
+		// add：Unofficial-Faithful32x-Luanti 材质包
+		copy {
+			from "${projRoot}/textures/Unofficial-Faithful32x-Luanti" into "${assetsFolder}/textures/Unofficial-Faithful32x-Luanti"
+		}
+		// add：mineclonia 游戏
+		copy {
+			from "${projRoot}/games/mineclonia" into "${assetsFolder}/games/mineclonia"
 		}
 		copy {
 			from "${localeFolder}" into "${assetsFolder}/locale"
