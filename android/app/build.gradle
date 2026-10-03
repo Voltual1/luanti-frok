@@ -18,28 +18,30 @@ android {
 	// load properties
 	Properties props = new Properties()
 	def propfile = file('../local.properties')
-	if (propfile.exists())
+	if (propfile.exists()) {
 		props.load(new FileInputStream(propfile))
+	}
+	def keystorePropsFile = rootProject.file('keystore.properties')
+	if (keystorePropsFile.exists()) {
+		props.load(new FileInputStream(keystorePropsFile))
+	}
 
-	if (props.getProperty('keystore') != null) {
-		signingConfigs {
-			release {
-				storeFile file(props['keystore'])
-				storePassword props['keystore.password']
-				keyAlias props['key']
-				keyPassword props['key.password']
-			}
+	signingConfigs {
+		release {
+			def ksPath = System.getenv('KEYSTORE_PATH') ?: props.getProperty('storeFile') ?: props.getProperty('keystore') ?: 'tag_keystore.p12'
+			storeFile file(ksPath)
+			storePassword System.getenv('KEYSTORE_PASSWORD') ?: props.getProperty('storePassword') ?: props.getProperty('keystore.password')
+			keyAlias System.getenv('KEY_ALIAS') ?: props.getProperty('keyAlias') ?: props.getProperty('key')
+			keyPassword System.getenv('KEY_PASSWORD') ?: props.getProperty('keyPassword') ?: props.getProperty('key.password')
 		}
+	}
 
-		buildTypes {
-    release {
-        minifyEnabled true
-        signingConfig signingConfigs.release
-        proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-    }
-}
-		
-
+	buildTypes {
+		release {
+			minifyEnabled true
+			signingConfig signingConfigs.release
+			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+		}
 	}
 
 	// for multiple APKs

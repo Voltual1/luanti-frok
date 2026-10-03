@@ -73,7 +73,18 @@ jobs:
           restore-keys: |
             luanti-android-deps-arm64-
 
+      - name: Decode Keystore
+        env:
+          ENCODED_STRING: ${{ secrets.SIGNING_KEY }}
+        run: |
+          echo $ENCODED_STRING | base64 -d > android/app/tag_keystore.p12
+
       - name: Build APK
+        env:
+          KEYSTORE_PATH: tag_keystore.p12
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: cd android; ./gradlew assembleRelease --build-cache
 
       - name: Get version info
