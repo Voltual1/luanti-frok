@@ -1,148 +1,18 @@
-<div align="center">
-    <img src="textures/base/pack/logo.png" width="32%">
-    <h1>Luanti (formerly Minetest)</h1>
-    <a href="https://github.com/luanti-org/luanti/actions?query=event%3Apush"><img src="https://github.com/luanti-org/luanti/workflows/linux/badge.svg" alt="Build status"></a>
-    <a href="https://hosted.weblate.org/engage/minetest/?utm_source=widget"><img src="https://hosted.weblate.org/widgets/minetest/-/svg-badge.svg" alt="Translation status"></a>
-    <a href="https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html"><img src="https://img.shields.io/badge/license-LGPLv2.1%2B-blue.svg" alt="License"></a>
-</div>
-<br>
+* **Mapgen ARG (`arg`)**：基于多频段 3D 分形噪声算法生成交错的蛛网状地形。
+* **Mapgen Skygrid (`skygrid`)**：结构化空岛方块网格生成器，具备对 Node 注册库的自动提取与过滤机制（自动过滤冲突节点）
+* **Mapgen Glitch (`glitch`)**：基于区块坐标的确定性哈希种子偏移算法，生成不连续、具错乱感的世界。
+* **Mapgen Farlands (`farlands`)**：bro尝试复刻边境之地但四不像
+* **Mapgen Backrooms (`backrooms`)**：后室结构生成器，基于二维墙体与三维货架噪声矩阵组合构建回廊地形（这个本来是要作为边境之地，但看了看像后室）
+* **Mapgen Layered (`layered`)**：千层饼式多重世界堆叠生成器。在不同的垂直高度区间（Overworld、Band 1~4）根据 Chunk Group 随机洗牌组合上述多种奇观生成算法，依旧大杂烩
 
-Luanti is a free open-source voxel game engine with easy modding and game creation.
+集成 Apache `ftpserver-core` 与 `mina-core`，新增 `FtpService` 后台服务与 `FtpActivity` 管理界面（这个实际上我之前在Rainbow-Porygon，Vector-Breakthrough就实现过了）
+引入 `com.google.crypto.tink:tink-android` 加密库，结合 Android KeyStore (AEAD) 对凭据数据进行硬安全加密存储。
+配置 `FOREGROUND_SERVICE_DATA_SYNC` 权限与常驻通知栏快捷开关，呃就是个“前台服务”防止系统给应用暂停了
 
-Copyright (C) 2010-2026 Perttu Ahola <celeron55@gmail.com>
-and contributors (see source file comments and the version control log)
+* **`l_mapgen.cpp` 容错处理**：修复 `minetest.get_mapgen_object` 读取 `heightmap`、`biomemap`、`heatmap` 及 `humidmap` 时，因特定生成器未初始化相关数组导致的悬空指针崩溃问题。增加了空指针检查并提供默认回退数组。
 
-Table of Contents
-------------------
+* **子模块集成**：集成 `games/mineclonia`（基于 Git Submodule）。
+* **高清材质包**：内置 `Unofficial-Faithful32x-Luanti` 32x 高清材质包（就是我之前做的那个）
+* **默认配置预设**：新增 `minetest.conf` 预设，默认启用中文环境 (`language = zh_CN`)（反正又没有外国人来，我又不做i18n）、死亡不掉落 (`keepInventory = true`) 并预设材质包路径。
 
-1. [Further Documentation](#further-documentation)
-2. [Default Controls](#default-controls)
-3. [Paths](#paths)
-4. [Configuration File](#configuration-file)
-5. [Command-line Options](#command-line-options)
-6. [Compiling](#compiling)
-7. [Docker](#docker)
-8. [Version Scheme](#version-scheme)
-
-
-Further documentation
-----------------------
-- Website: https://www.luanti.org/
-- Luanti Documentation: https://docs.luanti.org/
-- Forum: https://forum.luanti.org/
-- GitHub: https://github.com/luanti-org/luanti/
-- [Developer documentation](doc/developing/)
-- [doc/](doc/) directory of source distribution
-
-Default controls
-----------------
-All controls are re-bindable using settings.
-Some can be changed in the key config dialog in the settings tab.
-
-| Button                        | Action                                                         |
-|-------------------------------|----------------------------------------------------------------|
-| Move mouse                    | Look around                                                    |
-| W, A, S, D                    | Move                                                           |
-| Space                         | Jump/move up                                                   |
-| Shift                         | Sneak/move down                                                |
-| Q                             | Drop itemstack                                                 |
-| Shift + Q                     | Drop single item                                               |
-| Left mouse button             | Dig/punch/use                                                  |
-| Right mouse button            | Place/use                                                      |
-| Shift + right mouse button    | Build (without using)                                          |
-| I                             | Inventory menu                                                 |
-| Mouse wheel                   | Select item                                                    |
-| 0-9                           | Select item                                                    |
-| Z                             | Zoom (needs zoom privilege)                                    |
-| T                             | Chat                                                           |
-| /                             | Command                                                        |
-| Esc                           | Pause menu/abort/exit (pauses only singleplayer game)          |
-| +                             | Increase view range                                            |
-| -                             | Decrease view range                                            |
-| K                             | Enable/disable fly mode (needs fly privilege)                  |
-| J                             | Enable/disable fast mode (needs fast privilege)                |
-| H                             | Enable/disable noclip mode (needs noclip privilege)            |
-| E                             | Aux1 (Move fast in fast mode. Games may add special features)  |
-| C                             | Cycle through camera modes                                     |
-| V                             | Cycle through minimap modes                                    |
-| Shift + V                     | Change minimap orientation                                     |
-| F1                            | Hide/show HUD                                                  |
-| F2                            | Hide/show chat                                                 |
-| F3                            | Disable/enable fog                                             |
-| F4                            | Disable/enable camera update (Mapblocks are not updated anymore when disabled, disabled in release builds)  |
-| F5                            | Cycle through debug information screens                        |
-| F6                            | Cycle through profiler info screens                            |
-| F10                           | Show/hide console                                              |
-| F12                           | Take screenshot                                                |
-
-Paths
------
-Locations:
-
-* `bin`   - Compiled binaries
-* `share` - Distributed read-only data
-* `user`  - User-created modifiable data
-
-Where each location is on each platform:
-
-* Windows .zip / RUN_IN_PLACE source:
-    * `bin`   = `bin`
-    * `share` = `.`
-    * `user`  = `.`
-* Windows installed:
-    * `bin`   = `C:\Program Files\Minetest\bin (Depends on the install location)`
-    * `share` = `C:\Program Files\Minetest (Depends on the install location)`
-    * `user`  = `%APPDATA%\Minetest` or `%MINETEST_USER_PATH%`
-* Linux installed:
-    * `bin`   = `/usr/bin`
-    * `share` = `/usr/share/minetest`
-    * `user`  = `~/.minetest` or `$MINETEST_USER_PATH`
-* macOS:
-    * `bin`   = `Contents/MacOS`
-    * `share` = `Contents/Resources`
-    * `user`  = `Contents/User` or `~/Library/Application Support/minetest` or `$MINETEST_USER_PATH`
-
-Worlds can be found as separate folders in: `user/worlds/`
-
-Configuration file
-------------------
-- Default location:
-    `user/minetest.conf`
-- This file is created by closing Luanti for the first time.
-- A specific file can be specified on the command line:
-    `--config <path-to-file>`
-- A run-in-place build will look for the configuration file in
-    `location_of_exe/../minetest.conf` and also `location_of_exe/../../minetest.conf`
-
-Command-line options
---------------------
-- Use `--help`
-
-Compiling
----------
-
-- [Compiling - common information](doc/compiling/README.md)
-- [Compiling on GNU/Linux](doc/compiling/linux.md)
-- [Compiling on Windows](doc/compiling/windows.md)
-- [Compiling on MacOS](doc/compiling/macos.md)
-
-Docker
-------
-
-- [Developing minetestserver with Docker](doc/developing/docker.md)
-- [Running a server with Docker](doc/docker_server.md)
-
-Version scheme
---------------
-We use `major.minor.patch` since 5.0.0-dev. Prior to that we used `0.major.minor`.
-
-- Major is incremented when the release contains breaking changes, all other
-numbers are set to 0.
-- Minor is incremented when the release contains new non-breaking features,
-patch is set to 0.
-- Patch is incremented when the release only contains bugfixes and very
-minor/trivial features considered necessary.
-
-Since 5.0.0-dev and 0.4.17-dev, the dev notation refers to the next release,
-i.e.: 5.0.0-dev is the development version leading to 5.0.0.
-Prior to that we used `previous_version-dev`.
+* **许可证更新**：项目使用 GNU AGPL v3 (GNU Affero General Public License) 开源协议（我都用了我之前AGPLv3的代码顺手升一下许可证）
