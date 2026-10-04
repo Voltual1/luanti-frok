@@ -1,0 +1,10 @@
+[versions]
+ftpserver = "1.2.1"
+minaCore = "2.2.5"
+tink = "1.20.0"
+
+[libraries]
+ftpserver-api  = { group = "org.apache.ftpserver", name = "ftplet-api",     version.ref = "ftpserver" }
+ftpserver-core = { group = "org.apache.ftpserver", name = "ftpserver-core", version.ref = "ftpserver" }
+mina-core      = { group = "org.apache.mina",       name = "mina-core",      version.ref = "minaCore" }
+tink-android   = { module = "com.google.crypto.tink:tink-android",           version.ref = "tink" }

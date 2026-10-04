@@ -232,7 +232,7 @@ public class GameActivity extends SDLActivity {
 			return;
 		}
 
-		Uri fileUri = FileProvider.getUriForFile(this, "net.minetest.minetest.fileprovider", file);
+		Uri fileUri = FileProvider.getUriForFile(this, "me.voltual.nb.fileprovider", file);
 
 		Intent intent = new Intent(Intent.ACTION_SEND, fileUri);
 		intent.setDataAndType(fileUri, getContentResolver().getType(fileUri));
@@ -290,8 +290,7 @@ public class GameActivity extends SDLActivity {
 		}
 
 		Intent notificationIntent = new Intent(this, GameActivity.class);
-		notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
-			| Intent.FLAG_ACTIVITY_SINGLE_TOP);
+		notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 		int pendingIntentFlag = 0;
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
 			pendingIntentFlag = PendingIntent.FLAG_MUTABLE;
@@ -327,7 +326,6 @@ public class GameActivity extends SDLActivity {
 
 		mNotifyManager.notify(MainActivity.NOTIFICATION_ID_GAME, builder.build());
 	}
-
 
 	public void setPlayingNowNotification(boolean show) {
 		gameNotificationShown = show;

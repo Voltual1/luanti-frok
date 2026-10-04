@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	xmlns:tools="http://schemas.android.com/tools"
+	xmlns:tools="http://schemas.android.com/tools"  
     android:installLocation="auto">
 
 	<uses-permission android:name="android.permission.INTERNET" />
 	<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-	<uses-feature android:glEsVersion="0x00020000" />
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
 	<application
 		android:allowBackup="false"
@@ -47,15 +48,27 @@
 			</intent-filter>
 		</activity>
 
+		<activity
+			android:name=".FtpActivity"
+			android:label="FTP Server"
+			android:theme="@style/AppTheme"
+			android:exported="true" />
+
 		<service
 			android:name=".UnzipService"
 			android:enabled="true"
 			android:exported="false" />
 
+		<service
+			android:name=".FtpService"
+			android:enabled="true"
+			android:exported="false"
+			android:foregroundServiceType="dataSync" />
+
 		<!-- FIXME: we can probably drop this and use the documents provider to share files -->
 		<provider
 			android:name="androidx.core.content.FileProvider"
-			android:authorities="net.minetest.minetest.fileprovider"
+			android:authorities="me.voltual.nb.fileprovider"
 			android:grantUriPermissions="true"
 			android:exported="false">
 			<meta-data
@@ -64,8 +77,8 @@
 		</provider>
 
 		<provider
-            android:name=".LuantiDocumentsProvider"
-            android:authorities="net.minetest.minetest.documents"
+            android:name="me.voltual.nb.LuantiDocumentsProvider"
+            android:authorities="me.voltual.nb.documents"
             android:exported="true"
             android:grantUriPermissions="true"
             android:permission="android.permission.MANAGE_DOCUMENTS">

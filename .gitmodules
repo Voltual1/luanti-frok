@@ -1,0 +1,3 @@
+[submodule "games/mineclonia"]
+	path = games/mineclonia
+	url = https://codeberg.org/mineclonia/mineclonia.git

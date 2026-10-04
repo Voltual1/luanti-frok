@@ -5,6 +5,15 @@ endif()
 
 # This can be read from ${PROJECT_NAME} after project() is called
 project(luanti)
+
+# ccache 
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+    message(STATUS "Using ccache: ${CCACHE_PROGRAM}")
+endif()
+
 set(PROJECT_NAME_CAPITALIZED "Luanti")
 
 set(CMAKE_CXX_STANDARD 17)
